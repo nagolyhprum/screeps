@@ -16,14 +16,18 @@ function workerBody(groups) {
     return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY, WORK], true);
 }
 
+function hasSize(r) {
+    return r && r.length;
+}
+
 var PARTY_SIZE = 0, recommendations = [{
     count : 2, 
     type : harvester,
-    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], groups.miner.length)
+    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
     count : 6,
     type : miner,
-    body : groups => makeBody(groups, [MOVE, WORK], [WORK], groups.harvester.length)
+    body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
     count : 6,
     type : upgrader,
@@ -43,7 +47,7 @@ var PARTY_SIZE = 0, recommendations = [{
 }, {
     count : PARTY_SIZE,
     type : away,
-    body : () => fighterBody
+    body : fighterBody
 }];
 
 module.exports.loop = function () {
@@ -98,7 +102,7 @@ function room(room, creeps) {
     groups.spawn = spawn;
     groups.room = room;
     if(spawn) {
-        console.log(Object.keys(groups).map(key => [key, groups[key].length]))
+        //console.log(Object.keys(groups).map(key => [key, groups[key].length]))
     }
     var canSpawn = OK;
     recommendations.forEach(recommendation => {
@@ -146,12 +150,22 @@ function squareFrom(x, y, callback) {
 }
 
 function addExtension(room) {
-    squareFrom(25, 25, (x, y) => {
-        var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
-        var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
-        var result = (x + y) % 2 === 1 && !hasWall ? room.createConstructionSite(x, y, STRUCTURE_EXTENSION) : false;
-        return x === -1 && y === -1 || result === ERR_RCL_NOT_ENOUGH || result === OK;
-    });
+    var max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller ? room.controller.level : 0];
+    var built = room.find(FIND_STRUCTURES, {
+        filter : structure => structure.structureType === STRUCTURE_EXTENSION 
+    }).length;
+    var toBuild = room.find(FIND_CONSTRUCTION_SITES, {
+        filter : cs => cs.structureType === STRUCTURE_EXTENSION
+    }).length;
+    return;
+    if(built + toBuild <= max) {
+        squareFrom(25, 25, (x, y) => {
+            var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
+            var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
+            var result = (x + y) % 2 === 1 && !hasWall ? room.createConstructionSite(x, y, STRUCTURE_EXTENSION) : false;
+            return x === -1 && y === -1 || result === OK;
+        });   
+    }
 }
 
 function builder(creep) {
@@ -163,7 +177,7 @@ function builder(creep) {
         creep.say('building');
     }
     if(creep.memory.building) {
-        var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (a.progressTotal - a.progress) - (b.progressTotal - b.progress));
+        var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => b.progressTotal - a.progressTotal);
         if(targets.length) {
             if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
