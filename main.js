@@ -9,7 +9,7 @@ function makeBody(groups, front, sequence, doit) {
 }
 
 function fighterBody(groups) {
-    return makeBody(groups, [MOVE], [ATTACK, TOUGH, TOUGH], true);
+    return makeBody(groups, [MOVE, ATTACK], [TOUGH, TOUGH, ATTACK], true);
 }
 
 function workerBody(groups) {
@@ -20,32 +20,32 @@ function hasSize(r) {
     return r && r.length;
 }
 
-var PARTY_SIZE = 0, recommendations = [{
-    count : 2, 
+var PARTY_SIZE = 2, recommendations = [{
+    count : groups => 4, 
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
-    count : 6,
+    count : groups => 6,
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
-    count : 6,
+    count : groups => 6,
     type : upgrader,
     body : workerBody
 }, {
-    count : 6,
+    count : groups => 6,
     type : builder,
     body : workerBody
 }, {
-    count : 6,
+    count : groups => 2,
     type : fighter,
     body : fighterBody
 }, {
-    count : 1, 
+    count : groups => 1, 
     type : explorer,
     body : groups => makeBody(groups, [], [MOVE], true)
 }, {
-    count : PARTY_SIZE,
+    count : groups => PARTY_SIZE,
     type : away,
     body : fighterBody
 }];
@@ -102,12 +102,12 @@ function room(room, creeps) {
     groups.spawn = spawn;
     groups.room = room;
     if(spawn) {
-        //console.log(Object.keys(groups).map(key => [key, groups[key].length]))
+        console.log(Object.keys(groups).map(key => [key, groups[key].length]))
     }
     var canSpawn = OK;
     recommendations.forEach(recommendation => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(count < recommendation.count && spawn && canSpawn === OK) {
+        if(count < recommendation.count(groups) && spawn && canSpawn === OK) {
             canSpawn = spawn.createCreep(recommendation.body(groups), "Logan Spawn " + new Date().getTime(), {
                 type : type
             });
@@ -136,35 +136,52 @@ function harvester(creep) {
 }
 
 function squareFrom(x, y, callback) {
-    var range = 0;
+    var range = 1;
     while(true) {
-        for(var i = x - range; i <= x + range; i++) {
-            for(var j = y - range; j <= y + range; j++) {
-                if(callback(i, j)) {
-                    return;
-                }
+        var range2 = 2 * range;
+        for(var i = 0; i < range2; i++) { //top left to right
+            if(callback(x - range + i, y - range)) {
+                return;
             }
-        }      
+        }
+        for(var i = 0; i < range2; i++) { //top left to bottom
+            if(callback(x - range, y - range + i)) {
+                return;
+            }
+        }
+        for(var i = 0; i < range2; i++) { //top right to bottom
+            if(callback(x + range, y - range + i)) {
+                return;
+            }
+        }
+        for(var i = 0; i < range2; i++) { //bottom left to right
+            if(callback(x - range + i, y + range)) {
+                return;
+            }
+        }
         range++;
     }
 }
 
 function addExtension(room) {
-    var max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller ? room.controller.level : 0];
-    var built = room.find(FIND_STRUCTURES, {
-        filter : structure => structure.structureType === STRUCTURE_EXTENSION 
-    }).length;
-    var toBuild = room.find(FIND_CONSTRUCTION_SITES, {
-        filter : cs => cs.structureType === STRUCTURE_EXTENSION
-    }).length;
-    return;
-    if(built + toBuild <= max) {
-        squareFrom(25, 25, (x, y) => {
-            var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
-            var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
-            var result = (x + y) % 2 === 1 && !hasWall ? room.createConstructionSite(x, y, STRUCTURE_EXTENSION) : false;
-            return x === -1 && y === -1 || result === OK;
-        });   
+    var cs = room.find(FIND_CONSTRUCTION_SITES);
+    if(cs.length < MAX_CONSTRUCTION_SITES) {
+        if(built + toBuild < max) {
+            var max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller ? room.controller.level : 0];
+            var built = room.find(FIND_STRUCTURES, {
+                filter : structure => structure.structureType === STRUCTURE_EXTENSION 
+            }).length;
+            var toBuild = room.find(FIND_CONSTRUCTION_SITES, {
+                filter : cs => cs.structureType === STRUCTURE_EXTENSION
+            }).length;
+            squareFrom(25, 25, (x, y) => {
+                var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
+                var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
+                var goodSpot = (x + y) % 2 === 1 && !hasWall;
+                var result = goodSpot ? room.createConstructionSite(x, y, STRUCTURE_EXTENSION) : false;
+                return x === -1 && y === -1 || result === OK;
+            });   
+        }
     }
 }
 
@@ -177,7 +194,7 @@ function builder(creep) {
         creep.say('building');
     }
     if(creep.memory.building) {
-        var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => b.progressTotal - a.progressTotal);
+        var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
         if(targets.length) {
             if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
