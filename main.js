@@ -8,6 +8,15 @@ function makeBody(groups, front, sequence, doit) {
     return front;
 }
 
+function getWorkerCount(groups) {
+    var sources = groups.room.find(FIND_SOURCES);
+    var spaces = sources.reduce((spaces, source) => {
+        var x = source.pos.x, y = source.pos.y;
+        var area = groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall");
+        return area.length + spaces;
+    }, 0)
+}
+
 function fighterBody(groups) {
     return makeBody(groups, [MOVE, ATTACK], [TOUGH, TOUGH, ATTACK], true);
 }
@@ -21,19 +30,19 @@ function hasSize(r) {
 }
 
 var PARTY_SIZE = 2, recommendations = [{
-    count : groups => 4, 
+    count : getWorkerCount, 
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
-    count : groups => 6,
+    count : getWorkerCount,
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasSize(groups.miner) && hasSize(groups.harvester))
 }, {
-    count : groups => 6,
+    count : getWorkerCount,
     type : upgrader,
     body : workerBody
 }, {
-    count : groups => 6,
+    count : getWorkerCount,
     type : builder,
     body : workerBody
 }, {
