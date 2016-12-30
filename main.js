@@ -42,7 +42,7 @@ module.exports.loop = function () {
         count = room(r, creeps, now, count);
         addExtension(r);
         r.find(FIND_CONSTRUCTION_SITES).forEach(cs => {
-            if(cs.structureType === STRUCTURE_ROAD) {
+            if(cs.structureType === STRUCTURE_ROAD && !cs.progress) {
                 var date = Memory.roads[cs.pos.x + cs.pos.y * 50] || 0;
                 if(now - date >= 1000  * 60) {
                     cs.remove();
@@ -213,13 +213,14 @@ function goHome(creep) {
 
 //ROLES
 
-function room(room, creeps, now, creepCount) {
+function room(room, creeps, now, leastCreep) {
     var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns[Object.keys(Game.spawns)[0]];
     var groups = creeps.filter(creep => creep.memory.home === room.name).reduce((groups, creep) => {
         var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
         r.push(creep);
         return groups;
     }, {});
+    var creepCount = Object.keys(groups).reduce((creepCount, key) => creepCount + groups[key].length || 0, 0);
     groups.now = now;
     groups.spawn = spawn;
     groups.room = room;
@@ -228,7 +229,7 @@ function room(room, creeps, now, creepCount) {
     var canSpawn = OK;
     recommendations.forEach(recommendation => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(count < recommendation.count(groups) && canSpawn === OK && creeps.length < creepCount) {
+        if(count < recommendation.count(groups) && canSpawn === OK && creepCount <= leastCreep) {
             creepCount = creeps.length;
             if(free.length) {
                 var creep = free.shift();
@@ -245,7 +246,7 @@ function room(room, creeps, now, creepCount) {
             groups[type].forEach(creep => recommendation.type(creep, groups));
         }
     });
-    return ;
+    return Math.min(leastCreep, creepCount);
 }
 
 function harvester(creep, groups) {
