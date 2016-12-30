@@ -103,7 +103,7 @@ function fightersCount() {
 }
 
 function getThreats() {
-    return Object.keys(Memory.hostileRooms).filter(key => Memory.hostileRooms[key]);
+    return 0;
 }
 
 Memory.roads = Memory.roads || [];
