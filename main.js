@@ -210,6 +210,7 @@ function room(room, creeps) {
     }, {});
     groups.spawn = spawn;
     groups.room = room;
+    console.log(Object.keys(groups).map(key => [key, groups[key].length]))
     var free = creeps.filter(creep => !creep.memory.type);
     var canSpawn = OK;
     recommendations.forEach(recommendation => {
@@ -248,7 +249,12 @@ function harvester(creep) {
     }
 }
 
+function goHome(creep) {
+    return false;
+}
+
 function builder(creep) {
+    if(goHome(creep)) return;
     requires(creep, [WORK, CARRY, MOVE]);
     if(creep.memory.building && creep.carry.energy == 0) {
         creep.memory.building = false;
