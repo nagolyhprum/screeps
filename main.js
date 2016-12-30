@@ -20,7 +20,10 @@ var recommendations = [{
     type : fighter,
     body : fighterBody
 }, {
-    count : groups => Game.map.describeExits(groups.room.name).length,
+    count : groups => {
+        var exits = Game.map.describeExits(groups.room.name);
+        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
+    },
     type : expander,
     body : () => [MOVE]
 }];
@@ -40,7 +43,7 @@ module.exports.loop = function () {
     for(var i in Game.rooms) {
         var r = Game.rooms[i];
         count = room(r, creeps, now, count);
-        addExtension(r);
+        addSites(r);
         r.find(FIND_CONSTRUCTION_SITES).forEach(cs => {
             if(cs.structureType === STRUCTURE_ROAD && !cs.progress) {
                 var date = Memory.roads[cs.pos.x + cs.pos.y * 50] || 0;
@@ -49,6 +52,13 @@ module.exports.loop = function () {
                 }
             }
         });
+    }
+    for(var i in Game.spawns) {
+        var spawn = Game.spawns[i];
+        if(spawn.memory.toSpawn) {
+            spawn.createCreep(spawn.memory.toSpawn.body, undefined, spawn.memory.toSpawn.memory);
+            spawn.memory.toSpawn = false;
+        }
     }
     console.log("--------");
 };
@@ -171,26 +181,31 @@ function switchStates(creep) {
     return creep.memory.state;
 }
 
-function addExtension(room) {
+function addSite(room, site) {
     var cs = room.find(FIND_CONSTRUCTION_SITES);
     if(cs.length < MAX_CONSTRUCTION_SITES) {
-        var max = CONTROLLER_STRUCTURES[STRUCTURE_EXTENSION][room.controller ? room.controller.level : 0];
+        var max = CONTROLLER_STRUCTURES[site][room.controller ? room.controller.level : 0];
         var built = room.find(FIND_STRUCTURES, {
-            filter : structure => structure.structureType === STRUCTURE_EXTENSION 
+            filter : structure => structure.structureType === site 
         }).length;
         var toBuild = room.find(FIND_CONSTRUCTION_SITES, {
-            filter : cs => cs.structureType === STRUCTURE_EXTENSION
+            filter : cs => cs.structureType === site
         }).length;
         if(built + toBuild < max) {
             squareFrom(25, 25, (x, y) => {
                 var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
                 var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
                 var goodSpot = (x + y) % 2 === 1 && !hasWall;
-                var result = goodSpot ? room.createConstructionSite(x, y, STRUCTURE_EXTENSION) : false;
+                var result = goodSpot ? room.createConstructionSite(x, y, site) : false;
                 return x === -1 && y === -1 || result === OK;
             });   
         }
     }
+}
+
+function addSites(room) {
+    addSite(room, STRUCTURE_TOWER);
+    addSite(room, STRUCTURE_EXTENSION);
 }
 
 function requires(creep, r) {
@@ -206,6 +221,7 @@ function goHome(creep) {
         var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
         var path = creep.pos.findClosestByRange(exits[0].exit);
         creep.moveTo(path);   
+        createPath(creep);
         return true;
     }
     return false;
@@ -236,10 +252,13 @@ function room(room, creeps, now, leastCreep) {
                 creep.memory.home = room.name;
             } else {
                 canSpawn = false;
-                spawn.createCreep(recommendation.body(groups), undefined, {
-                    type : type,
-                    home : room.name
-                });
+                spawn.memory.toSpawn = {
+                    body : recommendation.body(groups),
+                    memory : {
+                        type : type,
+                        home : room.name
+                    }
+                };
             }
         }
         if(groups[type]) {
