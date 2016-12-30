@@ -300,9 +300,11 @@ function upgrader(creep, groups) {
     }
 }
 
+var five_minutes = 1000 * 60 * 5;
+
 function fighter(creep, groups) {
     if(!fight(creep) && !goHome(creep)) {
-        switch(Math.floor(groups.now / 1000 / 60) % 4) {
+        switch(Math.floor(groups.now / five_minutes) % 4) {
             case 0 :
                 creep.moveTo(10, 10);
                 break;
