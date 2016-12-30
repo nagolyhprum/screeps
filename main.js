@@ -17,7 +17,7 @@ var recommendations = [{
     type : builder,
     body : workerBody
 }, {
-    count : fightersCount,
+    count : getWorkerCount,
     type : fighter,
     body : fighterBody
 }, {
@@ -36,11 +36,11 @@ module.exports.loop = function () {
         creeps.push(Game.creeps[key]);
         return creeps;
     }, []);
+    var now = new Date().getTime();
     for(var i in Game.rooms) {
         var r = Game.rooms[i];
-        room(r, creeps);
+        room(r, creeps, now);
         addExtension(r);
-        var now = new Date().getTime();
         r.find(FIND_CONSTRUCTION_SITES).forEach(cs => {
             if(cs.structureType === STRUCTURE_ROAD) {
                 var date = Memory.roads[cs.pos.x + cs.pos.y * 50] || 0;
@@ -92,14 +92,6 @@ function workerBody(groups) {
 
 function hasSize(r) {
     return r ? r.length : 0;
-}
-
-function fightersCount() {
-    return 4;
-}
-
-function getThreats() {
-    return 4;
 }
 
 Memory.roads = Memory.roads || [];
@@ -209,18 +201,25 @@ function requires(creep, r) {
 }
 
 function goHome(creep) {
+    if(creep.room.name !== creep.memory.home) {
+        var exits = Game.map.findExit(creep.room.name, creep.home);
+        var path = creep.pos.findClosestByRange(exits[0].exit);
+        creep.moveTo(path);   
+        return true;
+    }
     return false;
 }
 
 //ROLES
 
-function room(room, creeps) {
+function room(room, creeps, now) {
     var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns[Object.keys(Game.spawns)[0]];
     var groups = creeps.filter(creep => creep.room === room).reduce((groups, creep) => {
         var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
         r.push(creep);
         return groups;
     }, {});
+    groups.now = now;
     groups.spawn = spawn;
     groups.room = room;
     console.log(Object.keys(groups).map(key => [key, groups[key].length]))
@@ -234,7 +233,7 @@ function room(room, creeps) {
                 creep.memory.type = type;
                 creep.memory.home = room.name;
             } else {
-                canSpawn = spawn.createCreep(recommendation.body(groups), "Logan Spawn " + new Date().getTime(), {
+                canSpawn = spawn.createCreep(recommendation.body(groups), undefined, {
                     type : type,
                     home : room.name
                 });
@@ -269,15 +268,15 @@ function harvester(creep) {
 function builder(creep) {
     requires(creep, [WORK, CARRY, MOVE]);
     if(switchStates(creep)) {
-        var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
-        if(targets.length) {
-            if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
+        var targets = creep.room.find(FIND_STRUCTURES).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
+        if(targets.length && targets[0].hits < targets[0].hitsMax) {
+            if(creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
             }
         } else {
-            var targets = creep.room.find(FIND_STRUCTURES).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
-            if(targets.length && targets[0].hits < targets[0].hitsMax) {
-                if(creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
+            var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
+            if(targets.length) {
+                if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(targets[0]);
                 }
             } else {
@@ -301,9 +300,22 @@ function upgrader(creep, groups) {
     }
 }
 
-function fighter(creep) {
+function fighter(creep, groups) {
     if(!fight(creep) && !goHome(creep)) {
-        creep.moveTo(25, 25);
+        switch((groups.now / 1000 / 60) % 4) {
+            case 0 :
+                creep.moveTo(10, 10);
+                break;
+            case 1 :
+                creep.moveTo(40, 10);
+                break;
+            case 2 :
+                creep.moveTo(40, 40);
+                break;
+            case 3 :
+                creep.moveTo(10, 40);
+                break;
+        }
     }
 }
 
@@ -318,6 +330,23 @@ function miner(creep) {
 }
 
 function expander(creep) {
-    creep.say("mine");
+    if(!creep.memory.goal) {
+        var home = Game.rooms[creep.memory.home];
+        if(home) {
+            var exits = Game.map.describeExits(home.name);
+            var rooms = Object.keys(exits).map(key => exits[key]).filter(name => !Game.rooms[name]);
+            creep.memory.goal = rooms[0];
+        }
+    } else {
+        if(creep.room.name !== creep.memory.goal) {
+            creep.say(creep.memory.goal);
+            var exits = Game.map.findExit(creep.room.name, creep.goal);
+            var path = creep.pos.findClosestByRange(exits[0].exit);
+            creep.moveTo(path);   
+        } else {
+            creep.moveTo(25, 25);
+            creep.say("mine");
+        }
+    }
 }
     
