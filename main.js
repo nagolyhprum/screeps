@@ -1,4 +1,5 @@
 
+
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -249,7 +250,7 @@ function room(room, creeps, now, toSpawn) {
     groups.spawn = spawn;
     groups.room = room;
     var free = creeps.filter(creep => !creep.memory.type);
-    console.log(Object.keys(groups).map(key => [key, groups[key].length]));
+    console.log(Object.keys(groups).map(key => [key, groups[key].length]), Object.keys(groups).reduce((count, key) => count + (groups[key].length || 0), 0));
     var canSpawn = true;
     recommendations.forEach(recommendation => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
@@ -262,7 +263,7 @@ function room(room, creeps, now, toSpawn) {
                 canSpawn = false;
                 toSpawn.push({
                     body : recommendation.body(groups),
-                    count : Object.keys(groups).reduce((creepCount, key) => creepCount + groups[key].length || 0, 0),
+                    count : Object.keys(groups).reduce((creepCount, key) => creepCount + (groups[key].length || 0), 0),
                     memory : {
                         type : type,
                         home : room.name
