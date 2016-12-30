@@ -52,6 +52,12 @@ module.exports.loop = function () {
                 }
             }
         });
+        var hostiles = r.find(FIND_HOSTILE_CREEPS);
+        r.find(FIND_STRUCTURES, {
+            filter : structure => structure.structureType === STRUCTURE_TOWER
+        }).forEach(tower => {
+            hostiles.forEach(hostile => tower.attack(hostile));
+        });
     }
     toSpawn.sort((a, b) => b.count - a.count);
     for(var i in Game.spawns) {
@@ -63,7 +69,6 @@ module.exports.loop = function () {
             }
         }
     }
-    console.log("--------");
 };
 
 //HELPERS
@@ -274,9 +279,9 @@ function harvester(creep, groups) {
     if(switchStates(creep)) {
         var targets = groups.spawn.room.find(FIND_STRUCTURES, {
             filter: (structure) => {
-                return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) && structure.energy < structure.energyCapacity;
+                return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
             }
-        }).sort((a, b) => a.energyCapacity - b.energyCapacity);
+        }).sort((a, b) => b.energyCapacity - a.energyCapacity);
         if(targets.length > 0) {
             if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
