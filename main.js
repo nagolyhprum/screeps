@@ -202,7 +202,7 @@ function requires(creep, r) {
 //ROLES
 
 function room(room, creeps) {
-    var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)];
+    var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns[Object.keys(Game.spawns)[0]];
     var groups = creeps.filter(creep => creep.room === room).reduce((groups, creep) => {
         var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
         r.push(creep);
@@ -210,19 +210,19 @@ function room(room, creeps) {
     }, {});
     groups.spawn = spawn;
     groups.room = room;
-    if(spawn) {
-        console.log(Object.keys(groups).map(key => [key, groups[key].length]))
-    }
     var free = creeps.filter(creep => !creep.memory.type);
     var canSpawn = OK;
     recommendations.forEach(recommendation => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(count < recommendation.count(groups) && spawn && canSpawn === OK) {
+        if(count < recommendation.count(groups) && canSpawn === OK) {
             if(free.length) {
-                free.shift().memory.type = type;
+                var creep = free.shift();
+                creep.memory.type = type;
+                creep.memory.home = room.name;
             } else {
                 canSpawn = spawn.createCreep(recommendation.body(groups), "Logan Spawn " + new Date().getTime(), {
-                    type : type
+                    type : type,
+                    home : room.name
                 });
             }
         }
