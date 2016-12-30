@@ -20,11 +20,11 @@ var recommendations = [{
     type : fighter,
     body : fighterBody
 }, {
-    count : groups => 1, 
+    count : groups => 0, 
     type : explorer,
     body : groups => makeBody(groups, [], [MOVE], true)
 }, {
-    count : fightersCount,
+    count : groups => 0,
     type : away,
     body : fighterBody
 }];
@@ -106,14 +106,10 @@ function getThreats() {
     return Object.keys(Memory.hostileRooms).filter(key => Memory.hostileRooms[key]);
 }
 
-Memory.roads = [];
+Memory.roads = Memory.roads || [];
 function createPath(creep) {
     var x = creep.pos.x, y = creep.pos.y;
-    var structures = creep.room.lookForAt(LOOK_STRUCTURES, x, y);
-    var hasRoad = structures.reduce((hasRoad, structure) => hasRoad || structure.structureType === STRUCTURE_ROAD, false);
-    if(!hasRoad) {
-        creep.room.createConstructionSite(x, y, STRUCTURE_ROAD);
-    }
+    creep.room.createConstructionSite(x, y, STRUCTURE_ROAD);
     Memory.roads[x + y * 50] = new Date().getTime();
 }
 
