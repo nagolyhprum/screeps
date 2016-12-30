@@ -19,7 +19,7 @@ var recommendations = [{
     count : fightersCount,
     type : fighter,
     body : fighterBody
-}, {
+}/*, {
     count : groups => 0, 
     type : explorer,
     body : groups => makeBody(groups, [], [MOVE], true)
@@ -27,7 +27,7 @@ var recommendations = [{
     count : groups => 0,
     type : away,
     body : fighterBody
-}];
+}*/];
 
 module.exports.loop = function () {
     for(var name in Memory.creeps) {
@@ -82,7 +82,7 @@ function getWorkerCount(groups) {
         var x = source.pos.x, y = source.pos.y;
         var area = groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall");
         return area.length + spaces;
-    }, 0);
+    }, 0) / 2;
 }
 
 function fighterBody(groups) {
