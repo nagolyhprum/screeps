@@ -98,8 +98,7 @@ function hasSize(r) {
 }
 
 function fightersCount() {
-    var count = getThreats().length + 1;
-    return count * count;
+    return 4;
 }
 
 function getThreats() {
