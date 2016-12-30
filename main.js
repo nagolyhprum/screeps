@@ -115,13 +115,15 @@ function createPath(creep) {
 function getDropped(creep) {
     createPath(creep);
     if(creep.carry.energy < creep.carryCapacity) {
-        var droppedEnergy = creep.room.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);
-        var goal = droppedEnergy.find(energy => energy.id === creep.memory.goal) || droppedEnergy[0];
-        if(creep.pickup(goal) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(goal); 
-            creep.memory.goal = goal.id; 
-        } else {
-            creep.memory.goal = false;
+        if(!goHome(creep)) {
+            var droppedEnergy = creep.room.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);
+            var goal = droppedEnergy.find(energy => energy.id === creep.memory.goal) || droppedEnergy[0];
+            if(creep.pickup(goal) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(goal); 
+                creep.memory.goal = goal.id; 
+            } else {
+                creep.memory.goal = false;
+            }
         }
         return true;
     }
@@ -253,7 +255,6 @@ function goHome(creep) {
 }
 
 function builder(creep) {
-    if(goHome(creep)) return;
     requires(creep, [WORK, CARRY, MOVE]);
     if(creep.memory.building && creep.carry.energy == 0) {
         creep.memory.building = false;
@@ -301,74 +302,18 @@ function upgrader(creep) {
 }
 
 function fighter(creep) {
-    if(!fight(creep)) {
-        creep.moveTo(creep.room.controller);
-    }
-}
-
-Memory.rooms = Memory.rooms || {};
-Memory.hostileRooms = Memory.hostileRooms || {};
-function explorer(creep) {
-    if(creep.room.controller && !creep.room.controller.my && creep.room.controller.owner) {
-        Memory.hostileRooms[creep.room.name] = true;
-        creep.moveTo(creep.room.controller);
-        creep.say("sup bitch");
-        return;
-    }
-    Memory.hostileRooms[creep.room.name] = false;
-    var exits = Game.map.describeExits(creep.room.name); //get the exits "dir" : "name"
-    var key = Object.keys(exits).sort((a, b) => (Memory.rooms[exits[a]] || 0) - (Memory.rooms[exits[b]] || 0))[0]; //sort by visit count
-    if(creep.memory.currentRoom !== creep.room.name) {
-        var value = Memory.rooms[creep.room.name] || 0; //get visit count
-        Memory.rooms[creep.room.name] = value + 1; //set the visit count   
-    }
-    creep.memory.currentRoom = creep.room.name;
-    var dir = Game.map.findRoute(creep.room.name, exits[key]); //find direction
-    var closest = creep.pos.findClosestByRange(dir[0].exit); //find the path
-    creep.moveTo(closest); //go there
-}
- 
-var awayIndex = 0;
-
-function away(creep, groups) {
-    var count = groups.away.reduce((count, creep) => count + (!creep.memory.party ? 1 : 0), 0);
-    if(count === fightersCount()) {
-        var found = 0, index = 0;
-        awayIndex++;
-        while(found < fightersCount()) {
-            if(!groups.away[index].memory.party) {
-                groups.away[index].memory.party = awayIndex;
-                found++;
-            }
-            index++;
-        }
-    }
-    if(creep.memory.party) {
-        if(!fight(creep)) {
-            var goals = getThreats();
-            var goal = goals[creep.memory.party % goals.length];
-            if(goal) {
-                if(creep.room.name === goal) {
-                    fighter(creep);
-                    return;
-                }
-                var route = Game.map.findRoute(creep.room.name, goal);
-                var closest = creep.pos.findClosestByRange(route[0].exit); //find the path
-                creep.moveTo(closest);
-            } else {
-                fighter(creep);
-            }
-        }
-    } else {
-        fighter(creep);
+    if(!fight(creep) && !goHome(creep)) {
+        creep.moveTo(25, 25);
     }
 }
 
 function miner(creep) {
     requires(creep, [WORK, MOVE]);
-    var target = creep.pos.findClosestByPath(FIND_SOURCES);
-    if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
-        creep.moveTo(target);
+    if(!goHome(creep)) {
+        var target = creep.pos.findClosestByPath(FIND_SOURCES);
+        if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
+            creep.moveTo(target);
+        }
     }
 }
     
