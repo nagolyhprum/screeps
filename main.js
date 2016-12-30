@@ -233,6 +233,7 @@ function goHome(creep) {
         creep.moveTo(path);   
         createPath(creep);
         return true;
+        
     }
     return false;
 }
@@ -362,7 +363,8 @@ function miner(creep) {
     }
 }
 
-function expander(creep) {
+function expander(creep, groups) {
+    groups.expander.forEach((expander, i) => i > 0 && expander.suicide());
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
