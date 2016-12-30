@@ -69,6 +69,7 @@ module.exports.loop = function () {
             }
         }
     }
+    console.log("--------");
 };
 
 //HELPERS
@@ -248,6 +249,7 @@ function room(room, creeps, now, toSpawn) {
     groups.spawn = spawn;
     groups.room = room;
     var free = creeps.filter(creep => !creep.memory.type);
+    console.log(Object.keys(groups).map(key => [key, groups[key].length]));
     var canSpawn = true;
     recommendations.forEach(recommendation => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
