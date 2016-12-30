@@ -57,8 +57,10 @@ module.exports.loop = function () {
     for(var i in Game.spawns) {
         var spawn = Game.spawns[i];
         if(toSpawn.length) {
-            var toSpawn = toSpawn.pop();
-            spawn.createCreep(toSpawn.body, undefined, toSpawn.memory);
+            var toSpawn = toSpawn[toSpawn.length - 1];
+            if(spawn.createCreep(toSpawn.body, undefined, toSpawn.memory) === OK) {
+                toSpawn.pop();
+            }
         }
     }
     console.log("--------");
