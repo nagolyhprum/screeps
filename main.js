@@ -64,10 +64,8 @@ module.exports.loop = function () {
     for(var i in Game.spawns) {
         var spawn = Game.spawns[i];
         if(toSpawn.length) {
-            var toSpawn = toSpawn[toSpawn.length - 1];
-            if(spawn.createCreep(toSpawn.body, undefined, toSpawn.memory) === OK) {
-                toSpawn.pop();
-            }
+            var toSpawn = toSpawn.pop();
+            spawn.createCreep(toSpawn.body, undefined, toSpawn.memory);
         }
     }
     console.log("--------");
@@ -253,20 +251,18 @@ function room(room, creeps, now, toSpawn) {
     groups.spawn = spawn;
     groups.room = room;
     var free = creeps.filter(creep => !creep.memory.type);
-    console.log(Object.keys(groups).map(key => [key, groups[key].length]), Object.keys(groups).reduce((count, key) => count + (groups[key].length || 0), 0));
-    var canSpawn = true;
-    recommendations.forEach(recommendation => {
+    console.log(Object.keys(groups).map(key => [key, groups[key].length]), Object.keys(groups).length - 3);
+    recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(count < recommendation.count(groups) && canSpawn) {
+        if(count < recommendation.count(groups)) {
             if(free.length) {
                 var creep = free.shift();
                 creep.memory.type = type;
                 creep.memory.home = room.name;
             } else {
-                canSpawn = false;
                 toSpawn.push({
                     body : recommendation.body(groups),
-                    count : Object.keys(groups).reduce((creepCount, key) => creepCount + (groups[key].length || 0), 0),
+                    level,
                     memory : {
                         type : type,
                         home : room.name
