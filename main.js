@@ -302,7 +302,7 @@ function upgrader(creep, groups) {
 
 function fighter(creep, groups) {
     if(!fight(creep) && !goHome(creep)) {
-        switch((groups.now / 1000 / 60) % 4) {
+        switch(Math.floor(groups.now / 1000 / 60) % 4) {
             case 0 :
                 creep.moveTo(10, 10);
                 break;
