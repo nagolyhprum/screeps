@@ -1,10 +1,4 @@
 
-
-function hasHalf(groups) {
-    var workers = getWorkerCount(groups) / 2;
-    return hasSize(groups.miner) >= workers && hasSize(groups.harvester) >= workers;
-}
-
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -63,12 +57,22 @@ module.exports.loop = function () {
 
 //HELPERS
 
+function hasHalf(groups) {
+    var workers = getWorkerCount(groups) / 2;
+    return hasSize(groups.miner) >= workers && hasSize(groups.harvester) >= workers;
+}
+
 function makeBody(groups, front, sequence, doit) {
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
     var i = 0;
     while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.room.energyCapacityAvailable) {
         front.push(sequence[i % sequence.length]);
         i++;
+    }
+    for(var i = 0; i < front.length / 2; i++) {
+        var temp = front[i];
+        front[i] = front[front.length - i - 1];
+        front[front.length - i - 1] = temp;
     }
     return front;
 }
@@ -192,9 +196,10 @@ function addExtension(room) {
 }
 
 function requires(creep, r) {
-    var missing = r.reduce((all, part) => all || (creep.body.indexOf(part) !== -1 ? part : false), false);
+    var missing = r.reduce((all, part) => all || (!creep.body.find(p => p.type === part) ? part : false), false);
     if(missing) {
         creep.suicide();
+        //creep.say(missing);
     }
 }
 
@@ -349,6 +354,8 @@ function away(creep, groups) {
                 var route = Game.map.findRoute(creep.room.name, goal);
                 var closest = creep.pos.findClosestByRange(route[0].exit); //find the path
                 creep.moveTo(closest);
+            } else {
+                fighter(creep);
             }
         }
     } else {
@@ -357,7 +364,7 @@ function away(creep, groups) {
 }
 
 function miner(creep) {
-    requires(creep, [WORK]);
+    requires(creep, [WORK, MOVE]);
     var target = creep.pos.findClosestByPath(FIND_SOURCES);
     if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
         creep.moveTo(target);
