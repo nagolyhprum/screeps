@@ -144,8 +144,10 @@ function fight(creep) {
     requires(creep, [ATTACK, MOVE])
     var hostiles = [...creep.room.find(FIND_HOSTILE_STRUCTURES), ...creep.room.find(FIND_HOSTILE_CREEPS)];
     if(hostiles.length) {
-        if(creep.attack(hostiles[0]) === ERR_NOT_IN_RANGE) {
-           creep.moveTo(hostiles[0]); 
+        var hostile = hostiles.find(hostile => hostile.id === creep.memory.target) || hostiles[0];
+        if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
+           creep.moveTo(hostile); 
+           creep.memory.target = hostile.id;
         }
         return true;
     }
