@@ -211,7 +211,7 @@ function goHome(creep) {
     if(creep.room.name !== creep.memory.home) {
         var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
         creep.memory.path = exits;
-        var path = creep.pos.findClosestByRange(exits[0].exit);
+        var path = creep.pos.findClosestByPath(exits[0].exit);
         creep.moveTo(path);   
         return true;
         
