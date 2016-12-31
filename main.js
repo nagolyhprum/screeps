@@ -23,8 +23,11 @@ var recommendations = [{
     body : fighterBody
 }, {
     count : groups => {
-        var exits = Game.map.describeExits(groups.room.name);
-        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
+        if(Object.keys(Game.spawns) * 5 <= Object.keys(Game.rooms)) {
+            var exits = Game.map.describeExits(groups.room.name);
+            return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
+        }
+        return 0;
     },
     type : expander,
     body : () => [MOVE]
@@ -111,7 +114,7 @@ function getMiningCreeps(groups, source) {
 }
 
 function fighterBody(groups) {
-    return makeBody(groups, [MOVE, ATTACK], [ATTACK, TOUGH, TOUGH], true, 330);
+    return makeBody(groups, [MOVE, ATTACK], [MOVE, ATTACK, TOUGH, TOUGH], true, 130 + 150 * 2);
 }
 
 function workerBody(groups) {
@@ -422,7 +425,7 @@ function miner(creep, groups) {
         });
         var mine = creep.pos.findClosestByPath(FIND_SOURCES);
         if(creep.harvest(mine) === ERR_NOT_IN_RANGE) {
-            moveTo(creep, move, {
+            moveTo(creep, move || mine, {
                 maxRooms : 1
             });
         }
