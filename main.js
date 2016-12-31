@@ -388,6 +388,10 @@ function expander(creep, groups) {
             var path = creep.pos.findClosestByRange(exits[0].exit);
             creep.moveTo(path);   
         } else {
+            var hostiles = getHostiles();
+            if(hostiles.length) {
+                //TODO : ALL ATTACK
+            }
             creep.moveTo(25, 25);
             creep.say("mine");
         }
