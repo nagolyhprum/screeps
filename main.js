@@ -375,9 +375,7 @@ function fighter(creep, groups) {
 
 function miner(creep) {
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByPath(FIND_SOURCES, {
-            filter : source => source.energy > 0
-        });
+        var target = creep.pos.findClosestByPath(FIND_SOURCES);
         if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
             moveTo(creep, target, {
                 maxRooms : 1
@@ -398,7 +396,7 @@ function expander(creep, groups) {
     } else {
         if(creep.room.name !== creep.memory.goal) {
             var exits = Game.map.findRoute(creep.room, creep.memory.goal);
-            var exit = creep.pos.findClosestByRange(exits[0].exit);
+            var exit = creep.pos.findClosestByPath(exits[0].exit);
             if(exit) {
                 moveTo(creep, exit, {
                     maxRooms : 1
