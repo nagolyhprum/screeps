@@ -234,7 +234,14 @@ function getStorage(room) {
             filter: (structure) => {
             return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
         }
-    }).sort((a, b) => b.energyCapacity - a.energyCapacity);
+    }).sort((a, b) => a.energyCapacity - b.energyCapacity).reduce((sources, source) => {
+        if(source.structureType === STRUCTURE_SPAWN) {
+            sources.push(source);
+        } else {
+            sources.unshift(source);
+        }
+        return sources;
+    }, []);
 }
 
 function getHostiles(room) {
