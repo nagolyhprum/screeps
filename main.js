@@ -114,7 +114,7 @@ function getMiningCreeps(groups, source) {
 }
 
 function fighterBody(groups) {
-    return makeBody(groups, [MOVE, ATTACK], [MOVE, ATTACK, TOUGH, TOUGH], true, 130 + 150 * 2);
+    return makeBody(groups, [MOVE, ATTACK, TOUGH, TOUGH], [MOVE, ATTACK, TOUGH, TOUGH], true, 450);
 }
 
 function workerBody(groups) {
