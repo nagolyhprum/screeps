@@ -261,25 +261,18 @@ function room(room, creeps, now, toSpawn) {
     groups.now = now;
     groups.spawn = spawn;
     groups.room = room;
-    var free = creeps.filter(creep => !creep.memory.type);
     console.log(Object.keys(groups).map(key => [key, groups[key].length]));
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
         if(count < recommendation.count(groups)) {
-            if(free.length) {
-                var creep = free.shift();
-                creep.memory.type = type;
-                creep.memory.home = room.name;
-            } else {
-                toSpawn.push({
-                    body : recommendation.body(groups),
-                    level,
-                    memory : {
-                        type : type,
-                        home : room.name
-                    }
-                });
-            }
+            toSpawn.push({
+                body : recommendation.body(groups),
+                level,
+                memory : {
+                    type : type,
+                    home : room.name
+                }
+            });
         }
         if(groups[type]) {
             groups[type].forEach(creep => {
