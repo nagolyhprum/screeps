@@ -144,22 +144,7 @@ function squareFrom(x, y, callback) {
     while(true) {
         var range2 = 2 * range;
         for(var i = 0; i < range2; i++) { //top left to right
-            if(callback(x - range + i, y - range)) {
-                return;
-            }
-        }
-        for(var i = 0; i < range2; i++) { //top left to bottom
-            if(callback(x - range, y - range + i)) {
-                return;
-            }
-        }
-        for(var i = 0; i < range2; i++) { //top right to bottom
-            if(callback(x + range, y - range + i)) {
-                return;
-            }
-        }
-        for(var i = 0; i < range2; i++) { //bottom left to right
-            if(callback(x - range + i, y + range)) {
+            if(callback(x - range + i, y - range) || callback(x - range, y - range + i) || callback(x + range, y - range + i) || callback(x - range + i, y + range)) {
                 return;
             }
         }
