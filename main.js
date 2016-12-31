@@ -1,6 +1,5 @@
 
 
-
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -282,7 +281,6 @@ function room(room, creeps, now, toSpawn) {
         }
         if(groups[type]) {
             groups[type].forEach(creep => {
-                //creep.say(creep.memory.type);
                 recommendation.type(creep, groups)
             });
         }
@@ -304,7 +302,6 @@ function harvester(creep, groups) {
 }
         
 function builder(creep, groups) {
-    creep.say("BUILDER");
     if(switchStates(creep)) {
         var targets = getDamaged(creep.room);
         var t = target(creep, targets)
