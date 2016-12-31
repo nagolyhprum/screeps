@@ -6,7 +6,7 @@ var recommendations = [{
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups), 250)
 }, {
-    count : groups => Math.min(hasSize(groups.miner) * 2, getWorkerCount(groups) * 2), 
+    count : groups => Math.min(hasSize(groups.miner), getWorkerCount(groups)), 
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups), 200)
 }, {
@@ -91,7 +91,7 @@ function getWorkerCount(groups) {
         var x = source.pos.x, y = source.pos.y;
         var area = groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall");
         return area.length + spaces;
-    }, 0) / 2;
+    }, 0);
 }
 
 function fighterBody(groups) {
