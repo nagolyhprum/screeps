@@ -43,17 +43,17 @@ module.exports.loop = function () {
     var toSpawn = [];
     for(var i in Game.rooms) {
         var r = Game.rooms[i];
+        //START MEMORY
+        r.memory.dropped = r.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);
+        var hostiles = r.memory.hostiles = [...r.find(FIND_HOSTILE_STRUCTURES), ...r.find(FIND_HOSTILE_CREEPS)];
+        r.memory.storage = r.find(FIND_STRUCTURES, {
+            filter: (structure) => {
+                return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
+            }
+        }).sort((a, b) => b.energyCapacity - a.energyCapacity);
+        //STOP MEMORY
         room(r, creeps, now, toSpawn);
         addSites(r);
-        r.find(FIND_CONSTRUCTION_SITES).forEach(cs => {
-            if(cs.structureType === STRUCTURE_ROAD && !cs.progress) {
-                var date = Memory.roads[cs.pos.x + cs.pos.y * 50] || 0;
-                if(now - date >= 1000  * 60) {
-                    cs.remove();
-                }
-            }
-        });
-        var hostiles = r.find(FIND_HOSTILE_CREEPS);
         r.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_TOWER
         }).forEach(tower => {
@@ -113,18 +113,19 @@ function hasSize(r) {
     return r ? r.length : 0;
 }
 
-Memory.roads = Memory.roads || [];
 function createPath(creep) {
     var x = creep.pos.x, y = creep.pos.y;
-    creep.room.createConstructionSite(x, y, STRUCTURE_ROAD);
-    Memory.roads[x + y * 50] = new Date().getTime();
+    var terrain = creep.room.lookForAt(LOOK_TERRAIN, x, y)[0];
+    if(terrain === "swamp") {
+        creep.room.createConstructionSite(x, y, STRUCTURE_ROAD);
+    }
 }
 
 function getDropped(creep) {
     createPath(creep);
     if(creep.carry.energy < creep.carryCapacity) {
         if(!goHome(creep)) {
-            var droppedEnergy = creep.room.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);
+            var droppedEnergy = creep.room.memory.dropped;
             var goal = droppedEnergy.find(energy => energy.id === creep.memory.goal) || droppedEnergy[0];
             if(creep.pickup(goal) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(goal); 
@@ -140,7 +141,7 @@ function getDropped(creep) {
 
 function fight(creep) {
     requires(creep, [ATTACK, MOVE])
-    var hostiles = [...creep.room.find(FIND_HOSTILE_STRUCTURES), ...creep.room.find(FIND_HOSTILE_CREEPS)];
+    var hostiles = creep.room.memory.hostiles;
     if(hostiles.length) {
         var hostile = hostiles.find(hostile => hostile.id === creep.memory.target) || hostiles[0];
         if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
@@ -280,11 +281,8 @@ function room(room, creeps, now, toSpawn) {
 function harvester(creep, groups) {
     requires(creep, [CARRY, MOVE]);
     if(switchStates(creep)) {
-        var targets = groups.spawn.room.find(FIND_STRUCTURES, {
-            filter: (structure) => {
-                return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
-            }
-        }).sort((a, b) => b.energyCapacity - a.energyCapacity);
+        var targets = groups.spawn.room.memory.storage;
+        creep.say(targets.length);
         if(targets.length > 0) {
             if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
