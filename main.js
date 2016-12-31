@@ -98,7 +98,7 @@ function fighterBody(groups) {
 }
 
 function workerBody(groups) {
-    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY, WORK], true, 400);
+    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY], true, 300);
 }
 
 function hasSize(r) {
