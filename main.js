@@ -415,7 +415,7 @@ function miner(creep, groups) {
     if(!goHome(creep)) {
         var move = creep.pos.findClosestByPath(FIND_SOURCES, {
             filter : source => {
-                var spots = getMiningSpots(groups, source).length / 2;
+                var spots = Math.ceil(getMiningSpots(groups, source).length / 2);
                 var creeps = getMiningCreeps(groups, source).length;
                 return spots >= creeps;
             }
