@@ -51,6 +51,8 @@ module.exports.loop = function () {
                 return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
             }
         }).sort((a, b) => b.energyCapacity - a.energyCapacity);
+        r.memory.damaged = r.find(FIND_STRUCTURES).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
+        r.memory.sites = r.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress))
         //STOP MEMORY
         room(r, creeps, now, toSpawn);
         addSites(r);
@@ -282,7 +284,6 @@ function harvester(creep, groups) {
     requires(creep, [CARRY, MOVE]);
     if(switchStates(creep)) {
         var targets = groups.spawn.room.memory.storage;
-        creep.say(targets.length);
         if(targets.length > 0) {
             if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
@@ -296,13 +297,13 @@ function harvester(creep, groups) {
 function builder(creep, groups) {
     requires(creep, [WORK, CARRY, MOVE]);
     if(switchStates(creep)) {
-        var targets = creep.room.find(FIND_STRUCTURES).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
+        var targets = creep.room.memory.damaged;
         if(targets.length && targets[0].hits < targets[0].hitsMax) {
             if(creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
                 creep.moveTo(targets[0]);
             }
         } else {
-            var targets = creep.room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
+            var targets = creep.room.memory.sites;
             if(targets.length) {
                 if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(targets[0]);
