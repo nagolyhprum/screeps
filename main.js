@@ -207,9 +207,11 @@ function goHome(creep) {
     if(creep.room.name !== creep.memory.home) {
         var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
         var exit = creep.pos.findClosestByPath(exits[0].exit);
-        moveTo(creep, exit, {
-            maxRooms : 1
-        });   
+        if(exit) {
+            moveTo(creep, exit, {
+                maxRooms : 1
+            }); 
+        }  
         return true;
         
     }
@@ -397,9 +399,11 @@ function expander(creep, groups) {
         if(creep.room.name !== creep.memory.goal) {
             var exits = Game.map.findRoute(creep.room, creep.memory.goal);
             var exit = creep.pos.findClosestByRange(exits[0].exit);
-            moveTo(creep, exit, {
-                maxRooms : 1
-            });
+            if(exit) {
+                moveTo(creep, exit, {
+                    maxRooms : 1
+                });
+            }
         } else {
             var hostiles = getHostiles(creep.room);
             if(hostiles.length) {
