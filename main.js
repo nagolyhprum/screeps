@@ -37,7 +37,11 @@ module.exports.loop = function () {
         }
     }
     var creeps = Object.keys(Game.creeps).reduce((creeps, key) => {
-        creeps.push(Game.creeps[key]);
+        var creep = Game.creeps[key];
+        creeps.push(creep);
+        if(!Game.rooms[creep.memory.home]) {
+            creep.memory.home = Game.spawns[Object.keys(Game.spawns)[0]].room.name;
+        }
         return creeps;
     }, []);
     var now = new Date().getTime();
@@ -114,8 +118,17 @@ function createPath(creep) {
     }
 }
 
+var mycs = {};
+
 function moveTo(creep) {
     var args = Array.prototype.slice.call(arguments, 1);
+    PathFinder.use(true);
+    args[args.length - 1] = (roomName, cs) => {
+        if(!mycs[roomName]) {
+            mycs[roomName] = cs;
+        }
+        return mycs[roomName];
+    };
     var path = creep.pos.findPathTo.apply(creep.pos, args);
     creep.moveByPath(path);
 }
