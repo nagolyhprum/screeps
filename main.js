@@ -6,7 +6,7 @@ var recommendations = [{
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups), 250)
 }, {
-    count : groups => Math.min(hasSize(groups.miner), getWorkerCount(groups)), 
+    count : groups => Math.min(hasSize(groups.miner) * 2, getWorkerCount(groups) * 2), 
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups), 200)
 }, {
@@ -91,7 +91,7 @@ function getWorkerCount(groups) {
         var x = source.pos.x, y = source.pos.y;
         var area = groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall");
         return area.length + spaces;
-    }, 0);
+    }, 0) / 2;
 }
 
 function fighterBody(groups) {
@@ -202,16 +202,20 @@ function addSites(room) {
     addSite(room, STRUCTURE_EXTENSION);
 }
 
+function goToRoom(creep, room) {
+    var exits = Game.map.findRoute(creep.room.name, room);
+    var exit = creep.pos.findClosestByPath(exits[0].exit);
+    if(exit) {
+        moveTo(creep, exit, {
+            maxRooms : 1
+        }); 
+    }  
+}
+
 function goHome(creep) {
     createPath(creep);
     if(creep.room.name !== creep.memory.home) {
-        var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
-        var exit = creep.pos.findClosestByPath(exits[0].exit);
-        if(exit) {
-            moveTo(creep, exit, {
-                maxRooms : 1
-            }); 
-        }  
+        goToRoom(creep, creep.memory.home);
         return true;
         
     }
@@ -347,7 +351,11 @@ function upgrader(creep, groups) {
 var five_minutes = 1000 * 60 * 5;
 
 function fighter(creep, groups) {
-    if(!fight(creep) && !goHome(creep)) {
+    if(redAlertRoom) {
+        if(!fight(creep)) {
+            goToRoom(creep, redAlertRoom);
+        }
+    } else if(!fight(creep) && !goHome(creep)) {
         switch(Math.floor(groups.now / five_minutes) % 4) {
             case 0 :
                 moveTo(creep, 10, 10, {
@@ -373,9 +381,23 @@ function fighter(creep, groups) {
     }
 }
 
+var redAlertRoom;
+
+function redAlert(creep) {
+    var hostiles = getHostiles(creep.room);
+    if(hostiles.length) {
+        redAlertRoom = creep.room.name;
+    } else if(creep.room.name === redAlertRoom) {
+        redAlertRoom = false;
+    }
+}
+
 function miner(creep) {
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByPath(FIND_SOURCES);
+        redAlert(creep);
+        var target = creep.pos.findClosestByPath(FIND_SOURCES, {
+            filter : source => source.energy > 0
+        });
         if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
             moveTo(creep, target, {
                 maxRooms : 1
@@ -395,18 +417,9 @@ function expander(creep, groups) {
         }
     } else {
         if(creep.room.name !== creep.memory.goal) {
-            var exits = Game.map.findRoute(creep.room, creep.memory.goal);
-            var exit = creep.pos.findClosestByPath(exits[0].exit);
-            if(exit) {
-                moveTo(creep, exit, {
-                    maxRooms : 1
-                });
-            }
+            goToRoom(creep, creep.memory.goal);
         } else {
-            var hostiles = getHostiles(creep.room);
-            if(hostiles.length) {
-                //TODO : ALL ATTACK
-            }
+            redAlert(creep);
             moveTo(creep, 25, 25, {
                 maxRooms : 1
             });
