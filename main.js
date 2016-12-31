@@ -289,7 +289,6 @@ function room(room, creeps, now, toSpawn) {
 }
 
 function harvester(creep, groups) {
-        creep.say("HELLo")
     if(switchStates(creep)) {
         var targets = getStorage(groups.spawn.room);
         var t = target(creep, targets);
@@ -399,8 +398,10 @@ function expander(creep, groups) {
     } else {
         if(creep.room.name !== creep.memory.goal) {
             var exits = Game.map.findRoute(creep.room, creep.memory.goal);
-            var path = creep.pos.findClosestByRange(exits[0].exit);
-            creep.moveTo(path);   
+            var exit = creep.pos.findClosestByRange(exits[0].exit);
+            moveTo(creep, path, {
+                maxRooms : 1
+            });
         } else {
             var hostiles = getHostiles(creep.room);
             if(hostiles.length) {
