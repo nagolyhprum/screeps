@@ -60,7 +60,7 @@ module.exports.loop = function () {
             hostiles.forEach(hostile => tower.attack(hostile));
         });
     }
-    toSpawn.sort((a, b) => b.count - a.count);
+    toSpawn.sort((a, b) => b.level - a.level);
     for(var i in Game.spawns) {
         var spawn = Game.spawns[i];
         if(toSpawn.length) {
@@ -214,6 +214,7 @@ function addSite(room, site) {
 }
 
 function addSites(room) {
+    addSite(room, STRUCTURE_SPAWN);
     addSite(room, STRUCTURE_TOWER);
     addSite(room, STRUCTURE_EXTENSION);
 }
@@ -251,7 +252,7 @@ function room(room, creeps, now, toSpawn) {
     groups.spawn = spawn;
     groups.room = room;
     var free = creeps.filter(creep => !creep.memory.type);
-    console.log(Object.keys(groups).map(key => [key, groups[key].length]), Object.keys(groups).length - 3);
+    console.log(Object.keys(groups).map(key => [key, groups[key].length]));
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
         if(count < recommendation.count(groups)) {
