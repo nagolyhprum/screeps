@@ -4,11 +4,11 @@
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
-    body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups), 250)
+    body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups))
 }, {
     count : groups => Math.min(hasSize(groups.miner) * 2, getWorkerCount(groups) * 2), 
     type : harvester,
-    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups), 200)
+    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
 }, {
     count : getWorkerCount,
     type : upgrader,
@@ -81,7 +81,8 @@ function hasHalf(groups) {
     return hasSize(groups.miner) >= workers && hasSize(groups.harvester) >= workers;
 }
 
-function makeBody(groups, front, sequence, doit, max = BODYPART_COST.claim * MAX_CREEP_SIZE) {
+function makeBody(groups, front, sequence, doit) {
+    var max = sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length;
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
     var i = 0;
     while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.spawn.room.energyCapacityAvailable && cost <= max) {
@@ -114,11 +115,11 @@ function getMiningCreeps(groups, source) {
 }
 
 function fighterBody(groups) {
-    return makeBody(groups, [MOVE, ATTACK, TOUGH, TOUGH], [MOVE, ATTACK, TOUGH, TOUGH], true, 450);
+    return makeBody(groups, [MOVE, ATTACK, TOUGH, TOUGH], [MOVE, ATTACK, TOUGH, TOUGH], true);
 }
 
 function workerBody(groups) {
-    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY], true, 300);
+    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY], true);
 }
 
 function hasSize(r) {
