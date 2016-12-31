@@ -116,7 +116,12 @@ function createPath(creep) {
 
 function moveTo(creep) {
     var args = Array.prototype.slice.call(arguments, 1);
+    if(creep.memory.last) {
+        var last = creep.memory.last;
+        args[args.length - 1].avoid = [new RoomPosition(last.x, last.y, last.room)];
+    }
     var path = creep.pos.findPathTo.apply(creep.pos, args);
+    creep.memory.last = { x : creep.pos.x, y : creep.pos.y, room : creep.room.name};
     return creep.moveByPath(path);
 }
 
@@ -300,7 +305,7 @@ function harvester(creep, groups) {
         var t = target(creep, targets);
         if(t) {
             if(creep.transfer(t, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                moveTo(creep, t);
+                moveTo(creep, t, {});
             }
         }
     } else {
@@ -341,7 +346,7 @@ function upgrader(creep, groups) {
     if(switchStates(creep)) {
         var controller = groups.spawn.room.controller;
         if(creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
-            moveTo(creep, controller);
+            moveTo(creep, controller, {});
         }
     } else {
         getDropped(creep);
