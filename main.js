@@ -122,13 +122,6 @@ var mycs = {};
 
 function moveTo(creep) {
     var args = Array.prototype.slice.call(arguments, 1);
-    PathFinder.use(true);
-    args[args.length - 1] = (roomName, cs) => {
-        if(!mycs[roomName]) {
-            mycs[roomName] = cs;
-        }
-        return mycs[roomName];
-    };
     var path = creep.pos.findPathTo.apply(creep.pos, args);
     creep.moveByPath(path);
 }
