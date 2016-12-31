@@ -235,7 +235,6 @@ function goToRoom(creep, room) {
 }
 
 function goHome(creep) {
-    createPath(creep);
     if(creep.room.name !== creep.memory.home) {
         goToRoom(creep, creep.memory.home);
         return true;
@@ -312,6 +311,7 @@ function room(room, creeps, now, toSpawn) {
             groups[type].forEach(creep => {
                 recommendation.type(creep, groups)
                 redAlert(creep);
+                createPath(creep);
             });
         }
     });
