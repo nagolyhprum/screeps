@@ -95,10 +95,19 @@ function makeBody(groups, front, sequence, doit, max = BODYPART_COST.claim * MAX
 
 function getWorkerCount(groups) {
     return groups.room.find(FIND_SOURCES).reduce((spaces, source) => {
-        var x = source.pos.x, y = source.pos.y;
-        var area = groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall");
+        var area = getMiningSpots(groups, source);
         return area.length + spaces;
     }, 0) / 2;
+}
+
+function getMiningSpots(groups, source) {
+    var x = source.pos.x, y = source.pos.y;
+    return groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall")
+}
+
+function getMiningCreeps(groups, source) {
+    var x = source.pos.x, y = source.pos.y;
+    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true);
 }
 
 function fighterBody(groups) {
@@ -402,13 +411,18 @@ function redAlert(creep) {
     }
 }
 
-function miner(creep) {
+function miner(creep, groups) {
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByPath(FIND_SOURCES, {
-            filter : source => source.energy > 0
+        var move = creep.pos.findClosestByPath(FIND_SOURCES, {
+            filter : source => {
+                var spots = getMiningSpots(groups, source).length / 2;
+                var creeps = getMiningCreeps(groups, source).length;
+                return spots >= creeps;
+            }
         });
-        if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
-            moveTo(creep, target, {
+        var mine = creep.pos.findClosestByPath(FIND_SOURCES);
+        if(creep.harvest(mine) === ERR_NOT_IN_RANGE) {
+            moveTo(creep, move, {
                 maxRooms : 1
             });
         }
