@@ -116,13 +116,8 @@ function createPath(creep) {
 
 function moveTo(creep) {
     var args = Array.prototype.slice.call(arguments, 1);
-    if(creep.memory.last) {
-        var last = creep.memory.last;
-        args[args.length - 1].avoid = [new RoomPosition(last.x, last.y, last.room)];
-    }
     var path = creep.pos.findPathTo.apply(creep.pos, args);
-    creep.memory.last = { x : creep.pos.x, y : creep.pos.y, room : creep.room.name};
-    return creep.moveByPath(path);
+    creep.moveByPath(path);
 }
 
 function getDropped(creep) {
