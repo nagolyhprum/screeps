@@ -117,12 +117,9 @@ function getDropped(creep) {
     if(creep.carry.energy < creep.carryCapacity) {
         if(!goHome(creep)) {
             var droppedEnergy = getDroppedList(creep.room);
-            var goal = droppedEnergy.find(energy => energy.id === creep.memory.goal) || droppedEnergy[0];
-            if(creep.pickup(goal) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(goal); 
-                creep.memory.goal = goal.id; 
-            } else {
-                creep.memory.goal = false;
+            var t = target(creep, droppedEnergy);
+            if(creep.pickup(t) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(t);  
             }
         }
         return true;
