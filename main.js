@@ -1,5 +1,6 @@
 
 
+
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -55,9 +56,9 @@ module.exports.loop = function () {
     toSpawn.sort((a, b) => b.level - a.level);
     for(var i in Game.spawns) {
         var spawn = Game.spawns[i];
-        if(toSpawn.length) {
-            var toSpawn = toSpawn.pop();
-            spawn.createCreep(toSpawn.body, undefined, toSpawn.memory);
+        var data = toSpawn[toSpawn.length - 1];
+        if(data && spawn.createCreep(data.body, undefined, data.memory) === OK) {
+            toSpawn.pop();
         }
     }
     console.log("--------");
@@ -113,13 +114,21 @@ function createPath(creep) {
     }
 }
 
+function moveTo(creep) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    var path = creep.pos.findPathTo.apply(creep.pos, args);
+    return creep.moveByPath(path);
+}
+
 function getDropped(creep) {
     if(creep.carry.energy < creep.carryCapacity) {
         if(!goHome(creep)) {
             var droppedEnergy = getDroppedList(creep.room);
             var t = target(creep, droppedEnergy);
             if(creep.pickup(t) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(t);  
+                moveTo(creep, t, {
+                    maxRooms : 1
+                });  
             }
         }
         return true;
@@ -132,7 +141,9 @@ function fight(creep) {
     var hostile = target(creep, hostiles)
     if(hostile) {
         if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
-           creep.moveTo(hostile); 
+           moveTo(creep, hostile, {
+               maxRooms : 1
+           }); 
         }
         return true;
     }
@@ -195,9 +206,10 @@ function goHome(creep) {
     createPath(creep);
     if(creep.room.name !== creep.memory.home) {
         var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
-        creep.memory.path = exits;
-        var path = creep.pos.findClosestByPath(exits[0].exit);
-        creep.moveTo(path);   
+        var exit = creep.pos.findClosestByPath(exits[0].exit);
+        moveTo(creep, exit, {
+            maxRooms : 1
+        });   
         return true;
         
     }
@@ -277,12 +289,15 @@ function room(room, creeps, now, toSpawn) {
 }
 
 function harvester(creep, groups) {
+        creep.say("HELLo")
     if(switchStates(creep)) {
         var targets = getStorage(groups.spawn.room);
         var t = target(creep, targets);
         if(t) {
             if(creep.transfer(t, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(t);
+                moveTo(creep, t, {
+                    maxRooms : 1
+                });
             }
         }
     } else {
@@ -296,7 +311,9 @@ function builder(creep, groups) {
         var t = target(creep, targets)
         if(t) {
             if(creep.repair(t) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(t);
+                moveTo(creep, t, {
+                    maxRooms : 1
+                });
             }
         } else {
             var targets = getSites(creep.room);
@@ -304,7 +321,9 @@ function builder(creep, groups) {
             if(t) { 
                 var cs = Game.constructionSites[t.id];
                 if(creep.build(cs) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(cs);
+                    moveTo(creep, cs, {
+                        maxRooms : 1
+                    });
                 }
             } else {
                 upgrader(creep, groups);
@@ -319,7 +338,7 @@ function upgrader(creep, groups) {
     if(switchStates(creep)) {
         var controller = groups.spawn.room.controller;
         if(creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
-            creep.moveTo(controller);
+            moveTo(creep, controller);
         }
     } else {
         getDropped(creep);
@@ -332,16 +351,24 @@ function fighter(creep, groups) {
     if(!fight(creep) && !goHome(creep)) {
         switch(Math.floor(groups.now / five_minutes) % 4) {
             case 0 :
-                creep.moveTo(10, 10);
+                moveTo(creep, 10, 10, {
+                    maxRooms : 1
+                });
                 break;
             case 1 :
-                creep.moveTo(40, 10);
+                moveTo(creep, 40, 10, {
+                    maxRooms : 1
+                });
                 break;
             case 2 :
-                creep.moveTo(40, 40);
+                moveTo(creep, 40, 40, {
+                    maxRooms : 1
+                });
                 break;
             case 3 :
-                creep.moveTo(10, 40);
+                moveTo(creep, 10, 40, {
+                    maxRooms : 1
+                });
                 break;
         }
     }
@@ -353,7 +380,9 @@ function miner(creep) {
             filter : source => source.energy > 0
         });
         if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
-            creep.moveTo(target);
+            moveTo(creep, target, {
+                maxRooms : 1
+            });
         }
     }
 }
@@ -373,11 +402,13 @@ function expander(creep, groups) {
             var path = creep.pos.findClosestByRange(exits[0].exit);
             creep.moveTo(path);   
         } else {
-            var hostiles = getHostiles();
+            var hostiles = getHostiles(creep.room);
             if(hostiles.length) {
                 //TODO : ALL ATTACK
             }
-            creep.moveTo(25, 25);
+            moveTo(creep, 25, 25, {
+                maxRooms : 1
+            });
             creep.say("mine");
         }
     }
