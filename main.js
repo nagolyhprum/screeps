@@ -78,14 +78,14 @@ module.exports.loop = function () {
 //HELPERS
 
 function hasHalf(groups) {
-    var workers = getWorkerCount(groups) / 2;
+    var workers = Math.floor(getWorkerCount(groups) / 2);
     return hasSize(groups.miner) >= workers && hasSize(groups.harvester) >= workers;
 }
 
 function makeBody(groups, front, sequence, doit, max = BODYPART_COST.claim * MAX_CREEP_SIZE) {
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
     var i = 0;
-    while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.room.energyCapacityAvailable && cost <= max) {
+    while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.spawn.room.energyCapacityAvailable && cost <= max) {
         front.push(sequence[i % sequence.length]);
         i++;
     }
@@ -258,10 +258,10 @@ function room(room, creeps, now, toSpawn) {
         r.push(creep);
         return groups;
     }, {});
+    console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
     groups.now = now;
     groups.spawn = spawn;
     groups.room = room;
-    console.log(Object.keys(groups).map(key => [key, groups[key].length]));
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
         if(count < recommendation.count(groups)) {
