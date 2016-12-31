@@ -51,7 +51,9 @@ module.exports.loop = function () {
                 return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
             }
         }).sort((a, b) => b.energyCapacity - a.energyCapacity);
-        r.memory.damaged = r.find(FIND_STRUCTURES).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
+        r.memory.damaged = r.find(FIND_STRUCTURES, {
+            filter : structure => structure.hits < structure.hitsMax
+        }).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
         r.memory.sites = r.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress))
         //STOP MEMORY
         room(r, creeps, now, toSpawn);
@@ -124,7 +126,6 @@ function createPath(creep) {
 }
 
 function getDropped(creep) {
-    createPath(creep);
     if(creep.carry.energy < creep.carryCapacity) {
         if(!goHome(creep)) {
             var droppedEnergy = creep.room.memory.dropped;
@@ -144,11 +145,10 @@ function getDropped(creep) {
 function fight(creep) {
     requires(creep, [ATTACK, MOVE])
     var hostiles = creep.room.memory.hostiles;
-    if(hostiles.length) {
-        var hostile = hostiles.find(hostile => hostile.id === creep.memory.target) || hostiles[0];
+    var hostile = target(creep, hostiles)
+    if(hostile) {
         if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
            creep.moveTo(hostile); 
-           creep.memory.target = hostile.id;
         }
         return true;
     }
@@ -231,15 +231,22 @@ function requires(creep, r) {
 }
 
 function goHome(creep) {
+    createPath(creep);
     if(creep.room.name !== creep.memory.home) {
         var exits = Game.map.findRoute(creep.room.name, creep.memory.home);
+        creep.memory.path = exits;
         var path = creep.pos.findClosestByRange(exits[0].exit);
         creep.moveTo(path);   
-        createPath(creep);
         return true;
         
     }
     return false;
+}
+
+function target(creep, targets) {
+    var target = targets.find(target => target.id === creep.memory.target) || targets[0];
+   target && (creep.memory.target = target.id);
+   return target;
 }
 
 //ROLES
@@ -275,7 +282,10 @@ function room(room, creeps, now, toSpawn) {
             }
         }
         if(groups[type]) {
-            groups[type].forEach(creep => recommendation.type(creep, groups));
+            groups[type].forEach(creep => {
+                //creep.say(creep.memory.type);
+                recommendation.type(creep, groups)
+            });
         }
     });
 }
@@ -284,9 +294,10 @@ function harvester(creep, groups) {
     requires(creep, [CARRY, MOVE]);
     if(switchStates(creep)) {
         var targets = groups.spawn.room.memory.storage;
-        if(targets.length > 0) {
-            if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(targets[0]);
+        var t = target(creep, targets);
+        if(t) {
+            if(creep.transfer(t, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(t);
             }
         }
     } else {
@@ -298,21 +309,22 @@ function builder(creep, groups) {
     requires(creep, [WORK, CARRY, MOVE]);
     if(switchStates(creep)) {
         var targets = creep.room.memory.damaged;
-        if(targets.length && targets[0].hits < targets[0].hitsMax) {
-            if(creep.repair(targets[0]) == ERR_NOT_IN_RANGE) {
-                creep.moveTo(targets[0]);
+        var t = target(creep, targets)
+        if(t) {
+            if(creep.repair(t) == ERR_NOT_IN_RANGE) {
+                creep.moveTo(t);
             }
         } else {
             var targets = creep.room.memory.sites;
-            if(targets.length) {
-                if(creep.build(targets[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(targets[0]);
+            var t = target(creep, targets);
+            if(t) {
+                if(creep.build(t) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(t);
                 }
             } else {
                 upgrader(creep, groups);
             }
         }
-        
     } else {
         getDropped(creep);
     }
@@ -354,7 +366,7 @@ function fighter(creep, groups) {
 function miner(creep) {
     requires(creep, [WORK, MOVE]);
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByPath(FIND_SOURCES);
+        var target = creep.pos.findClosestByRange(FIND_SOURCES);
         if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
             creep.moveTo(target);
         }
