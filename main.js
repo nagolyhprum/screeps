@@ -294,9 +294,7 @@ function harvester(creep, groups) {
         var t = target(creep, targets);
         if(t) {
             if(creep.transfer(t, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                moveTo(creep, t, {
-                    maxRooms : 1
-                });
+                moveTo(creep, t);
             }
         }
     } else {
@@ -399,7 +397,7 @@ function expander(creep, groups) {
         if(creep.room.name !== creep.memory.goal) {
             var exits = Game.map.findRoute(creep.room, creep.memory.goal);
             var exit = creep.pos.findClosestByRange(exits[0].exit);
-            moveTo(creep, path, {
+            moveTo(creep, exit, {
                 maxRooms : 1
             });
         } else {
