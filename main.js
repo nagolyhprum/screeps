@@ -65,6 +65,9 @@ module.exports.loop = function () {
             toSpawn.pop();
         }
     }
+    if(redAlertRoom) {
+        console.log("RED ALERT IN ", redAlertRoom);
+    }
     console.log("--------");
 };
 
@@ -295,6 +298,7 @@ function room(room, creeps, now, toSpawn) {
         if(groups[type]) {
             groups[type].forEach(creep => {
                 recommendation.type(creep, groups)
+                redAlert(creep);
             });
         }
     });
@@ -400,7 +404,6 @@ function redAlert(creep) {
 
 function miner(creep) {
     if(!goHome(creep)) {
-        redAlert(creep);
         var target = creep.pos.findClosestByPath(FIND_SOURCES, {
             filter : source => source.energy > 0
         });
@@ -425,7 +428,6 @@ function expander(creep, groups) {
         if(creep.room.name !== creep.memory.goal) {
             goToRoom(creep, creep.memory.goal);
         } else {
-            redAlert(creep);
             moveTo(creep, 25, 25, {
                 maxRooms : 1
             });
