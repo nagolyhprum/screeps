@@ -359,7 +359,9 @@ function fighter(creep, groups) {
 function miner(creep) {
     requires(creep, [WORK, MOVE]);
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByRange(FIND_SOURCES);
+        var target = creep.pos.findClosestByPath(FIND_SOURCES, {
+            filter : source => source.energy > 0
+        });
         if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
             creep.moveTo(target);
         }
