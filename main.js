@@ -240,7 +240,7 @@ function goToRoom(creep, room) {
 }
 
 function goHome(creep) {
-    if(creep.room.name !== creep.memory.home && creep.room.home !== redAlertRoom) {
+    if(creep.room.name !== creep.memory.home && creep.memory.home !== redAlertRoom) {
         goToRoom(creep, creep.memory.home);
         return true;
         
