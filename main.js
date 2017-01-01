@@ -20,6 +20,10 @@ var recommendations = [{
     type : fighter,
     body : fighterBody
 }, {
+    count : groups => groups.room.controller && !groups.room.controller.my && Game.gcl.level  < roomsControlled() ? 1 : 0,
+    type : claimer,
+    body : () => [MOVE, CLAIM]
+}, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
         return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
@@ -27,6 +31,10 @@ var recommendations = [{
     type : expander,
     body : () => [MOVE]
 }];
+
+function roomsControlled() {
+    return Object.keys(Game.rooms).reduce((total, key) => Game.rooms[key].controller && Game.rooms[key].controller.my ? 1 : 0);
+}
 
 module.exports.loop = function () {
     for(var name in Memory.creeps) {
@@ -55,12 +63,16 @@ module.exports.loop = function () {
             hostiles.forEach(hostile => tower.attack(hostile));
         });
     }
-    toSpawn.sort((a, b) => b.level - a.level);
+    toSpawn.sort((a, b) => a.level - b.level);
     for(var i in Game.spawns) {
         var spawn = Game.spawns[i];
-        var data = toSpawn[toSpawn.length - 1];
-        if(data && spawn.createCreep(data.body, undefined, data.memory) === OK) {
-            toSpawn.pop();
+        var level = (toSpawn[0] || {level:0}).level;
+        for(var i = 0; i < toSpawn.length && toSpawn[i].level <= level; i++) {
+            var data = toSpawn[i];
+            if(spawn.createCreep(data.body, undefined, data.memory) === OK) {
+                toSpawn.splice(i, 1);
+                break;
+            } 
         }
     }
     if(redAlertRoom) {
@@ -79,7 +91,7 @@ function hasHalf(groups) {
 
 function makeBody(groups, front, sequence, doit) {
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
-    var max = cost + sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length;
+    var max = cost + sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length * 2;
     var i = 0;
     while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.spawn.room.energyCapacityAvailable && cost <= max && front.length < MAX_CREEP_SIZE) {
         front.push(sequence[i % sequence.length]);
@@ -105,17 +117,12 @@ function getMiningSpots(groups, source) {
     return groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall")
 }
 
-function getMiningCreeps(groups, source) {
-    var x = source.pos.x, y = source.pos.y;
-    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true);
-}
-
 function fighterBody(groups) {
-    return makeBody(groups, [MOVE, ATTACK, TOUGH, TOUGH], [MOVE, ATTACK, TOUGH, TOUGH], true);
+    return makeBody(groups, [ATTACK, MOVE, TOUGH, TOUGH], [ATTACK, MOVE, TOUGH, TOUGH], true);
 }
 
 function workerBody(groups) {
-    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY], true);
+    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY, WORK], true);
 }
 
 function hasSize(r) {
@@ -233,7 +240,7 @@ function goToRoom(creep, room) {
 }
 
 function goHome(creep) {
-    if(creep.room.name !== creep.memory.home) {
+    if(creep.room.name !== creep.memory.home && creep.room.home !== redAlertRoom) {
         goToRoom(creep, creep.memory.home);
         return true;
         
@@ -451,3 +458,7 @@ function expander(creep, groups) {
     }
 }
     
+    
+function claimer(creep) {
+    
+}    
