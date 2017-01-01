@@ -4,7 +4,7 @@ var recommendations = [{
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups))
 }, {
-    count : groups => Math.min(hasSize(groups.miner) * 2, getWorkerCount(groups) * 2), 
+    count : groups => Math.min(hasSize(groups.miner) + 1, getWorkerCount(groups)), 
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
 }, {
@@ -97,7 +97,7 @@ function getWorkerCount(groups) {
     return groups.room.find(FIND_SOURCES).reduce((spaces, source) => {
         var area = getMiningSpots(groups, source);
         return area.length + spaces;
-    }, 0) / 2;
+    }, 0);
 }
 
 function getMiningSpots(groups, source) {
@@ -295,7 +295,7 @@ function room(room, creeps, now, toSpawn) {
     groups.room = room;
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(creeps.length < 100 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
+        if(creeps.length < 50 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
             toSpawn.push({
                 body : recommendation.body(groups),
                 level,
@@ -415,16 +415,9 @@ function redAlert(creep) {
 
 function miner(creep, groups) {
     if(!goHome(creep)) {
-        var move = creep.pos.findClosestByPath(FIND_SOURCES, {
-            filter : source => {
-                var spots = Math.ceil(getMiningSpots(groups, source).length / 2);
-                var creeps = getMiningCreeps(groups, source).length;
-                return spots >= creeps;
-            }
-        });
-        var mine = creep.pos.findClosestByPath(FIND_SOURCES);
-        if(creep.harvest(mine) === ERR_NOT_IN_RANGE) {
-            moveTo(creep, move || mine, {
+        var target = creep.pos.findClosestByPath(FIND_SOURCES);
+        if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
+            moveTo(creep, target, {
                 maxRooms : 1
             });
         }
