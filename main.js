@@ -267,7 +267,9 @@ function getStorage(room) {
 }
 
 function getHostiles(room) {
-    return [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
+    return [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS, {
+        filter : creep => creep.getActiveBodyparts(ATTACK) || creep.getActiveBodyparts(RANGED_ATTACK)
+    })];
 }
 
 function getDamaged(room) {
