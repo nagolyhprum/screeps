@@ -23,11 +23,8 @@ var recommendations = [{
     body : fighterBody
 }, {
     count : groups => {
-        if(Object.keys(Game.spawns).length * 5 >= Object.keys(Game.rooms).length) {
-            var exits = Game.map.describeExits(groups.room.name);
-            return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
-        }
-        return 0;
+        var exits = Game.map.describeExits(groups.room.name);
+        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
     },
     type : expander,
     body : () => [MOVE]
@@ -226,12 +223,14 @@ function addSites(room) {
 
 function goToRoom(creep, room) {
     var exits = Game.map.findRoute(creep.room.name, room);
-    var exit = creep.pos.findClosestByPath(exits[0].exit);
-    if(exit) {
-        moveTo(creep, exit, {
-            maxRooms : 1
-        }); 
-    }  
+    if(exits.length) {
+        var exit = creep.pos.findClosestByPath(exits[0].exit);
+        if(exit) {
+            moveTo(creep, exit, {
+                maxRooms : 1
+            }); 
+        }  
+    }
 }
 
 function goHome(creep) {
@@ -297,7 +296,7 @@ function room(room, creeps, now, toSpawn) {
     groups.room = room;
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(count < recommendation.count(groups)) {
+        if(creeps.length < 50 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
             toSpawn.push({
                 body : recommendation.body(groups),
                 level,
@@ -434,6 +433,12 @@ function miner(creep, groups) {
 }
 
 function expander(creep, groups) {
+    groups.expander.forEach(expander => {
+        if(expander.memory.goal === creep.memory.goal && expander !== creep) {
+            expander.suicide();
+            delete expander.memory.goal;
+        }
+    })
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
