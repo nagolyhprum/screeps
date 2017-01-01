@@ -8,11 +8,11 @@ var recommendations = [{
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
 }, {
-    count : getWorkerCount,
+    count : groups => getWorkerCount(groups) / 2,
     type : upgrader,
     body : workerBody
 }, {
-    count : getWorkerCount,
+    count : groups => getWorkerCount(groups) / 2,
     type : builder,
     body : workerBody
 }, {
