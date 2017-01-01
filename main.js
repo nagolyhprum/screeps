@@ -32,6 +32,13 @@ var recommendations = [{
     body : () => [MOVE]
 }];
 
+for(var i in Game.constructionSites) {
+    var cs = Game.constructionSites[i];
+    if(!cs.progress) {
+        cs.remove();
+    }
+}
+
 function roomsControlled() {
     return Object.keys(Game.rooms).reduce((total, key) => Game.rooms[key].controller && Game.rooms[key].controller.my ? 1 : 0);
 }
@@ -229,7 +236,7 @@ function addSite(room, site) {
                 var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
                 var goodSpot = (x + y) % 2 === 1 && !hasWall;
                 var result = goodSpot ? room.createConstructionSite(x, y, site) : false;
-                return x === -1 && y === -1 || result === OK;
+                return x === 0 || result === OK;
             });   
         }
     }
@@ -239,6 +246,8 @@ function addSites(room) {
     addSite(room, STRUCTURE_SPAWN);
     addSite(room, STRUCTURE_TOWER);
     addSite(room, STRUCTURE_EXTENSION);
+    addSite(room, STRUCTURE_CONTAINER);
+    addSite(room, STRUCTURE_STORAGE);
 }
 
 function goToRoom(creep, room) {
@@ -275,13 +284,13 @@ function getDroppedList(room) {
 function getStorage(room) {
     return room.find(FIND_STRUCTURES, {
             filter: (structure) => {
-            return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN || structure.structureType == STRUCTURE_TOWER) && structure.energy < structure.energyCapacity;
+            return [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_CONTAINER, STRUCTURE_STORAGE].includes(structure.structureType) && structure.energy < structure.energyCapacity;
         }
     }).sort((a, b) => a.energyCapacity - b.energyCapacity).reduce((sources, source) => {
-        if(source.structureType === STRUCTURE_SPAWN) {
-            sources.push(source);
-        } else {
+        if(source.structureType === STRUCTURE_TOWER) {
             sources.unshift(source);
+        } else {
+            sources.push(source);
         }
         return sources;
     }, []);
