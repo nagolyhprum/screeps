@@ -112,7 +112,7 @@ function hasHalf(groups) {
 
 function makeBody(groups, front, sequence, doit) {
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
-    var max = cost + sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length * 2;
+    var max = cost + sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length;
     var i = 0;
     while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.spawn.room.energyCapacityAvailable && cost <= max && front.length < MAX_CREEP_SIZE) {
         front.push(sequence[i % sequence.length]);
