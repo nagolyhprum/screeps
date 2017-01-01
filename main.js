@@ -167,19 +167,15 @@ function moveTo(creep) {
 }
 
 function getDropped(creep) {
-    if(creep.carry.energy < creep.carryCapacity) {
-        if(!goHome(creep)) {
-            var droppedEnergy = getDroppedList(creep.room);
-            var t = target(creep, droppedEnergy);
-            if(creep.pickup(t) == ERR_NOT_IN_RANGE) {
-                moveTo(creep, t, {
-                    maxRooms : 1
-                });  
-            }
+    if(!goHome(creep)) {
+        var droppedEnergy = getDroppedList(creep.room);
+        var t = target(creep, droppedEnergy);
+        if(creep.pickup(t) == ERR_NOT_IN_RANGE) {
+            moveTo(creep, t, {
+                maxRooms : 1
+            });  
         }
-        return true;
     }
-    return false;
 }
 
 function fight(creep) {
