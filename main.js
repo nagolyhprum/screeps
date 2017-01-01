@@ -16,7 +16,7 @@ var recommendations = [{
     type : builder,
     body : workerBody
 }, {
-    count : getWorkerCount,
+    count : groups => getWorkerCount(groups) / 2,
     type : fighter,
     body : fighterBody
 }, {
