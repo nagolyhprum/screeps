@@ -1,6 +1,4 @@
 
-
-
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -80,8 +78,8 @@ function hasHalf(groups) {
 }
 
 function makeBody(groups, front, sequence, doit) {
-    var max = sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length;
     var cost = front.reduce((cost, part) => cost + BODYPART_COST[part], 0);
+    var max = cost + sequence.reduce((cost, part) => cost + BODYPART_COST[part], 0) * Object.keys(Game.spawns).length;
     var i = 0;
     while(doit && (cost += BODYPART_COST[sequence[i % sequence.length]]) <= groups.spawn.room.energyCapacityAvailable && cost <= max) {
         front.push(sequence[i % sequence.length]);
@@ -285,7 +283,7 @@ function getSites(room) {
 //ROLES
 
 function room(room, creeps, now, toSpawn) {
-    var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns[Object.keys(Game.spawns)[0]];
+    var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns.Spawn1// || room.getPositionAt(25, 25).findClosestByRange(Object.keys(Game.spawns).map(key => Game.spawns[key]))[0];
     var groups = creeps.filter(creep => creep.memory.home === room.name).reduce((groups, creep) => {
         var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
         r.push(creep);
@@ -297,7 +295,7 @@ function room(room, creeps, now, toSpawn) {
     groups.room = room;
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(creeps.length < 100 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
+        if(creeps.length < 125 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
             toSpawn.push({
                 body : recommendation.body(groups),
                 level,
