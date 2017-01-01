@@ -239,11 +239,13 @@ function addSite(room, site) {
 }
 
 function addSites(room) {
-    addSite(room, STRUCTURE_SPAWN);
-    addSite(room, STRUCTURE_TOWER);
-    addSite(room, STRUCTURE_EXTENSION);
-    addSite(room, STRUCTURE_CONTAINER);
-    addSite(room, STRUCTURE_STORAGE);
+    if(room.controller && room.controller.my) {
+        addSite(room, STRUCTURE_SPAWN);
+        addSite(room, STRUCTURE_TOWER);
+        addSite(room, STRUCTURE_EXTENSION);
+        addSite(room, STRUCTURE_CONTAINER);
+        addSite(room, STRUCTURE_STORAGE);
+    }
 }
 
 function goToRoom(creep, room) {
