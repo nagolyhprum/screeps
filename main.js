@@ -36,12 +36,22 @@ function roomsControlled() {
     return Object.keys(Game.rooms).reduce((total, key) => Game.rooms[key].controller && Game.rooms[key].controller.my ? 1 : 0);
 }
 
+function assignSpawns() {
+    var keys = Object.keys(Game.spawns);
+    var index = 0;
+    for(var i in Game.rooms) {
+        Game.rooms[i].memory.spawn = keys[index % keys.length];
+        index++;
+    }
+}
+
 module.exports.loop = function () {
     for(var name in Memory.creeps) {
         if(!Game.creeps[name]) {
             delete Memory.creeps[name];
         }
     }
+    assignSpawns();
     var creeps = Object.keys(Game.creeps).reduce((creeps, key) => {
         var creep = Game.creeps[key];
         creeps.push(creep);
@@ -292,7 +302,7 @@ function getSites(room) {
 //ROLES
 
 function room(room, creeps, now, toSpawn) {
-    var spawn = Game.spawns[Object.keys(Game.spawns).find(key => Game.spawns[key].room === room)] || Game.spawns.Spawn1// || room.getPositionAt(25, 25).findClosestByRange(Object.keys(Game.spawns).map(key => Game.spawns[key]))[0];
+    var spawn = Game.spawns[room.memory.spawn];
     var groups = creeps.filter(creep => creep.memory.home === room.name).reduce((groups, creep) => {
         var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
         r.push(creep);
@@ -460,5 +470,9 @@ function expander(creep, groups) {
     
     
 function claimer(creep) {
-    
+    if(!goHome(creep)) {
+        if(creep.claimController(creep.room.controller) === ERR_NOT_IN_RANGE) {
+            creep.moveTo(creep.room.controller);
+        }
+    }
 }    
