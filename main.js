@@ -23,7 +23,7 @@ var recommendations = [{
     body : fighterBody
 }, {
     count : groups => {
-        if(Object.keys(Game.spawns) * 5 <= Object.keys(Game.rooms)) {
+        if(Object.keys(Game.spawns).length * 5 >= Object.keys(Game.rooms).length) {
             var exits = Game.map.describeExits(groups.room.name);
             return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
         }
@@ -43,7 +43,7 @@ module.exports.loop = function () {
         var creep = Game.creeps[key];
         creeps.push(creep);
         if(!Game.rooms[creep.memory.home]) {
-            creep.memory.home = Game.spawns[Object.keys(Game.spawns)[0]].room.name;
+            goHome(creep);
         }
         return creeps;
     }, []);
@@ -434,7 +434,6 @@ function miner(creep, groups) {
 }
 
 function expander(creep, groups) {
-    groups.expander.forEach((expander, i) => i > 0 && expander.suicide());
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
