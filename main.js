@@ -295,7 +295,7 @@ function room(room, creeps, now, toSpawn) {
     groups.room = room;
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
-        if(creeps.length < 125 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
+        if(creeps.length < 100 * Object.keys(Game.spawns).length && count < recommendation.count(groups)) {
             toSpawn.push({
                 body : recommendation.body(groups),
                 level,
