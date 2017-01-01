@@ -20,13 +20,13 @@ var recommendations = [{
     type : fighter,
     body : fighterBody
 }, {
-    count : groups => groups.room.controller && !groups.room.controller.my && Game.gcl.level  < roomsControlled() ? 1 : 0,
+    count : groups => (groups.room.controller && !groups.room.controller.my && Game.gcl.level > roomsControlled()) ? 1 : 0,
     type : claimer,
     body : () => [MOVE, CLAIM]
 }, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
-        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length;
+        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
     },
     type : expander,
     body : () => [MOVE]
@@ -40,7 +40,7 @@ for(var i in Game.constructionSites) {
 }
 
 function roomsControlled() {
-    return Object.keys(Game.rooms).reduce((total, key) => Game.rooms[key].controller && Game.rooms[key].controller.my ? 1 : 0);
+    return Object.keys(Game.rooms).reduce((total, key) => (Game.rooms[key].controller && Game.rooms[key].controller.my ? 1 : 0) + total, 0);
 }
 
 function assignSpawns() {
@@ -467,11 +467,6 @@ function miner(creep, groups) {
 }
 
 function expander(creep, groups) {
-    groups.expander.forEach(expander => {
-        if(expander.memory.goal === creep.memory.goal && expander !== creep) {
-            delete expander.memory.goal;
-        }
-    })
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
