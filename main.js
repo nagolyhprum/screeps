@@ -283,9 +283,7 @@ function getDroppedList(room) {
 
 function getStorage(room) {
     return room.find(FIND_STRUCTURES, {
-            filter: (structure) => {
-            return [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_CONTAINER, STRUCTURE_STORAGE].includes(structure.structureType) && structure.energy < structure.energyCapacity;
-        }
+        filter: (structure) =>  structure.energy < structure.energyCapacity
     }).sort((a, b) => a.energyCapacity - b.energyCapacity).reduce((sources, source) => {
         if(source.structureType === STRUCTURE_TOWER) {
             sources.unshift(source);
@@ -386,7 +384,7 @@ function builder(creep, groups) {
             }
         }
     } else {
-        getDropped(creep);
+        getStored(creep);
     }
 }
 
@@ -395,6 +393,20 @@ function upgrader(creep, groups) {
         var controller = groups.spawn.room.controller;
         if(creep.upgradeController(controller) == ERR_NOT_IN_RANGE) {
             moveTo(creep, controller, {});
+        }
+    } else {
+        getStored(creep);
+    }
+}
+
+function getStored(creep) {
+    var sources = creep.room.find(FIND_STRUCTURES, {
+        filter: (structure) => [STRUCTURE_STORAGE, STRUCTURE_CONTAINER].includes(structure.structureType) && structure.energy
+    });
+    if(sources.length) {
+        var t = target(creep, sources);
+        if(creep.withdraw(t) === ERR_NOT_IN_RANGE) {
+            creep.moveTo(t);
         }
     } else {
         getDropped(creep);
