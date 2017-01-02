@@ -1,5 +1,4 @@
 
-
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -48,7 +47,7 @@ function assignSpawns() {
     var keys = Object.keys(Game.spawns).sort();
     for(var i in Game.rooms) {
         var room = Game.rooms[i];
-        var spawn = room.find(FIND_STRUCTURES, {
+        var spawn = room.find(FIND_MY_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
         })[0]; 
         var values = (/\w(\d+)\w(\d+)/).exec(room.name);
@@ -79,7 +78,7 @@ module.exports.loop = function () {
         room(r, creeps, now, toSpawn);
         addSites(r);
         var hostiles = getHostiles(r);
-        r.find(FIND_STRUCTURES, {
+        r.find(FIND_MY_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_TOWER
         }).forEach(tower => {
             hostiles.forEach(hostile => tower.attack(hostile));
@@ -220,13 +219,13 @@ function switchStates(creep) {
 }
 
 function addSite(room, site) {
-    var cs = room.find(FIND_CONSTRUCTION_SITES);
+    var cs = room.find(FIND_MY_CONSTRUCTION_SITES);
     if(cs.length < MAX_CONSTRUCTION_SITES) {
         var max = CONTROLLER_STRUCTURES[site][room.controller ? room.controller.level : 0];
-        var built = room.find(FIND_STRUCTURES, {
+        var built = room.find(FIND_MY_STRUCTURES, {
             filter : structure => structure.structureType === site 
         }).length;
-        var toBuild = room.find(FIND_CONSTRUCTION_SITES, {
+        var toBuild = room.find(FIND_MY_CONSTRUCTION_SITES, {
             filter : cs => cs.structureType === site
         }).length;
         if(built + toBuild < max) {
@@ -282,7 +281,7 @@ function getDroppedList(room) {
 }
 
 function getStorage(room) {
-    return room.find(FIND_STRUCTURES, {
+    return room.find(FIND_MY_STRUCTURES, {
         filter: structure => (structure.energy < structure.energyCapacity) || (structure.store && (structure.store[RESOURCE_ENERGY] < structure.storeCapacity))
     }).sort((a, b) => (a.energyCapacity || a.storeCapacity) - (b.energyCapacity || b.storeCapacity)).reduce((sources, source) => {
         if(source.structureType === STRUCTURE_TOWER) {
@@ -299,13 +298,13 @@ function getHostiles(room) {
 }
 
 function getDamaged(room) {
-    return room.find(FIND_STRUCTURES, {
+    return room.find(FIND_MY_STRUCTURES, {
         filter : structure => structure.hits < structure.hitsMax
     }).sort((a, b) => (b.hitsMax - b.hits) - (a.hitsMax - a.hits));
 }
 
 function getSites(room) {
-    return room.find(FIND_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
+    return room.find(FIND_MY_CONSTRUCTION_SITES).sort((a, b) => (b.progressTotal + b.progress) - (a.progressTotal + a.progress));
 }
 
 //ROLES
@@ -398,7 +397,7 @@ function upgrader(creep, groups) {
 }
 
 function getStored(creep) {
-    var sources = creep.room.find(FIND_STRUCTURES, {
+    var sources = creep.room.find(FIND_MY_STRUCTURES, {
         filter: structure => structure.store && structure.store[RESOURCE_ENERGY]
     });
     if(sources.length) {
