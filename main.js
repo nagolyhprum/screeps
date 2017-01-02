@@ -280,7 +280,7 @@ function getDroppedList(room) {
 
 function getStorage(room) {
     return room.find(FIND_STRUCTURES, {
-        filter: (structure) =>  structure.energy < structure.energyCapacity
+        filter: structure => structure.energy < structure.energyCapacity || structure.store < structure.storeCapacity
     }).sort((a, b) => a.energyCapacity - b.energyCapacity).reduce((sources, source) => {
         if(source.structureType === STRUCTURE_TOWER) {
             sources.unshift(source);
@@ -292,9 +292,7 @@ function getStorage(room) {
 }
 
 function getHostiles(room) {
-    return [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS, {
-        filter : creep => creep.getActiveBodyparts(ATTACK) || creep.getActiveBodyparts(RANGED_ATTACK)
-    })];
+    return [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
 }
 
 function getDamaged(room) {
@@ -398,11 +396,11 @@ function upgrader(creep, groups) {
 
 function getStored(creep) {
     var sources = creep.room.find(FIND_STRUCTURES, {
-        filter: (structure) => [STRUCTURE_STORAGE, STRUCTURE_CONTAINER].includes(structure.structureType) && structure.energy
+        filter: structure => structure.store
     });
     if(sources.length) {
         var t = target(creep, sources);
-        if(creep.withdraw(t) === ERR_NOT_IN_RANGE) {
+        if(creep.withdraw(t, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
             creep.moveTo(t);
         }
     } else {
