@@ -1,5 +1,4 @@
 
-
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -17,6 +16,14 @@ var recommendations = [{
     type : builder,
     body : workerBody
 }, {
+    count : groups => {
+        var capacity = groups.spawn.room.energyCapacityAvailable;
+        var cost = BODYPART_COST.claim + BODYPART_COST.move;
+        return (cost <= capacity && groups.room.controller && !groups.room.controller.my && Game.gcl.level > roomsControlled()) ? 1 : 0;
+    },
+    type : claimer,
+    body : () => [MOVE, CLAIM]
+}, {
     count : groups => getWorkerCount(groups),
     type : fighter,
     body : fighterBody
@@ -27,10 +34,6 @@ var recommendations = [{
     },
     type : expander,
     body : () => [MOVE]
-}, {
-    count : groups => (groups.room.controller && !groups.room.controller.my && Game.gcl.level > roomsControlled()) ? 1 : 0,
-    type : claimer,
-    body : () => [MOVE, CLAIM]
 }];
 
 for(var i in Game.constructionSites) {
