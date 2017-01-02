@@ -465,9 +465,6 @@ function miner(creep, groups) {
 }
 
 function expander(creep, groups) {
-    if(Object.keys(groups).length > 1) {
-        creep.suicide();
-    }
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
