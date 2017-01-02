@@ -44,7 +44,7 @@ function roomsControlled() {
 }
 
 function assignSpawns() {
-    var keys = Object.keys(Game.spawns);
+    var keys = Object.keys(Game.spawns).sort();
     for(var i in Game.rooms) {
         var room = Game.rooms[i];
         var spawn = room.find(FIND_STRUCTURES, {
@@ -280,8 +280,8 @@ function getDroppedList(room) {
 
 function getStorage(room) {
     return room.find(FIND_STRUCTURES, {
-        filter: structure => structure.energy < structure.energyCapacity || structure.store < structure.storeCapacity
-    }).sort((a, b) => a.energyCapacity - b.energyCapacity).reduce((sources, source) => {
+        filter: structure => (structure.energy < structure.energyCapacity) || (structure.store && (structure.store[RESOURCE_ENERGY] < structure.storeCapacity))
+    }).sort((a, b) => (a.energyCapacity || a.storeCapacity) - (b.energyCapacity || b.storeCapacity)).reduce((sources, source) => {
         if(source.structureType === STRUCTURE_TOWER) {
             sources.unshift(source);
         } else {
@@ -396,7 +396,7 @@ function upgrader(creep, groups) {
 
 function getStored(creep) {
     var sources = creep.room.find(FIND_STRUCTURES, {
-        filter: structure => structure.store
+        filter: structure => structure.store && structure.store[RESOURCE_ENERGY]
     });
     if(sources.length) {
         var t = target(creep, sources);
