@@ -45,14 +45,14 @@ function roomsControlled() {
 
 function assignSpawns() {
     var keys = Object.keys(Game.spawns);
-    var index = 0;
     for(var i in Game.rooms) {
         var room = Game.rooms[i];
         var spawn = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
         })[0];
-        room.memory.spawn = spawn ? spawn.name : keys[index % keys.length];
-        index++;
+        var values = (/W(\d+)N(\d+)/).exec(room.name);
+        var value = +values[1] + +values[2];
+        room.memory.spawn = spawn ? spawn.name : keys[value % keys.length];
     }
 }
 
@@ -139,7 +139,7 @@ function getMiningSpots(groups, source) {
 }
 
 function fighterBody(groups) {
-    return makeBody(groups, [ATTACK, MOVE, TOUGH, TOUGH], [ATTACK, MOVE, TOUGH, TOUGH], true);
+    return makeBody(groups, [ATTACK, RANGED_ATTACK, MOVE, TOUGH, TOUGH], [ATTACK, RANGED_ATTACK, MOVE, TOUGH, TOUGH], true);
 }
 
 function workerBody(groups) {
