@@ -26,7 +26,8 @@ var recommendations = [{
 }, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
-        return Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
+        var count = Object.keys(Game.creeps).reduce((count, key) => count + (Game.creeps[key].memory.type === "expander" ? 1 : 0), 0);
+        return count < 1 && Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
     },
     type : expander,
     body : () => [MOVE]
@@ -441,7 +442,7 @@ function fighter(creep, groups) {
     }
 }
 
-var redAlertRoom;
+var redAlertRoom = "";
 
 function redAlert(creep) {
     var hostiles = getHostiles(creep.room);
