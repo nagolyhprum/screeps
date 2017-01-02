@@ -49,8 +49,8 @@ function assignSpawns() {
         var room = Game.rooms[i];
         var spawn = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
-        })[0];
-        var values = (/W(\d+)N(\d+)/).exec(room.name);
+        })[0]; 
+        var values = (/\w(\d+)\w(\d+)/).exec(room.name);
         var value = +values[1] + +values[2];
         room.memory.spawn = spawn ? spawn.name : keys[value % keys.length];
     }
@@ -184,7 +184,7 @@ function fight(creep) {
     var hostiles = getHostiles(creep.room);
     var hostile = target(creep, hostiles)
     if(hostile) {
-        if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
+        if(creep.attack(hostile) === ERR_NOT_IN_RANGE || creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
            moveTo(creep, hostile, {
                maxRooms : 1
            }); 
