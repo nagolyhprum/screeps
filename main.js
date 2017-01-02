@@ -8,15 +8,15 @@ var recommendations = [{
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
 }, {
-    count : groups => getWorkerCount(groups) / 2,
+    count : groups => getWorkerCount(groups),
     type : upgrader,
     body : workerBody
 }, {
-    count : groups => getWorkerCount(groups) / 2,
+    count : groups => getWorkerCount(groups),
     type : builder,
     body : workerBody
 }, {
-    count : groups => getWorkerCount(groups) / 2,
+    count : groups => getWorkerCount(groups),
     type : fighter,
     body : fighterBody
 }, {
@@ -26,8 +26,7 @@ var recommendations = [{
 }, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
-        var count = Object.keys(Game.creeps).reduce((count, key) => count + (Game.creeps[key].memory.type === "expander" ? 1 : 0), 0);
-        return count < 1 && Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
+        return groups.room.controller && groups.room.controller.my && Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
     },
     type : expander,
     body : () => [MOVE]
@@ -128,15 +127,17 @@ function makeBody(groups, front, sequence, doit) {
 }
 
 function getWorkerCount(groups) {
-    return groups.room.find(FIND_SOURCES).reduce((spaces, source) => {
-        var area = getMiningSpots(groups, source);
-        return area.length + spaces;
-    }, 0);
+    return groups.room.find(FIND_SOURCES).length;
 }
 
 function getMiningSpots(groups, source) {
     var x = source.pos.x, y = source.pos.y;
     return groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall")
+}
+
+function getMiners(groups, source) {
+    var x = source.pos.x, y = source.pos.y;
+    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true).filter(creep => creep.type === "miner").length;
 }
 
 function fighterBody(groups) {
@@ -455,9 +456,13 @@ function redAlert(creep) {
 
 function miner(creep, groups) {
     if(!goHome(creep)) {
-        var target = creep.pos.findClosestByPath(FIND_SOURCES);
-        if(creep.harvest(target) === ERR_NOT_IN_RANGE) {
-            moveTo(creep, target, {
+        var t = creep.pos.findClosestByPath(FIND_SOURCES);
+        if(creep.harvest(t) === ERR_NOT_IN_RANGE) {
+            var sources = creep.room.find(FIND_SOURCES, {
+                filter : source => !getMiners(groups, source)
+            });
+            t = target(creep, sources);
+            moveTo(creep, t, {
                 maxRooms : 1
             });
         }
