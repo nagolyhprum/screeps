@@ -130,14 +130,9 @@ function getWorkerCount(groups) {
     return groups.room.find(FIND_SOURCES).length;
 }
 
-function getMiningSpots(groups, source) {
-    var x = source.pos.x, y = source.pos.y;
-    return groups.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(terrain => terrain.terrain !== "wall")
-}
-
 function getMiners(groups, source) {
     var x = source.pos.x, y = source.pos.y;
-    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true).filter(creep => creep.type === "miner").length;
+    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true).filter(creep => creep.memory.type === "miner").length;
 }
 
 function fighterBody(groups) {
