@@ -1,4 +1,5 @@
 
+
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -20,16 +21,16 @@ var recommendations = [{
     type : fighter,
     body : fighterBody
 }, {
-    count : groups => (groups.room.controller && !groups.room.controller.my && Game.gcl.level > roomsControlled()) ? 1 : 0,
-    type : claimer,
-    body : () => [MOVE, CLAIM]
-}, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
         return groups.room.controller && groups.room.controller.my && Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
     },
     type : expander,
     body : () => [MOVE]
+}, {
+    count : groups => (groups.room.controller && !groups.room.controller.my && Game.gcl.level > roomsControlled()) ? 1 : 0,
+    type : claimer,
+    body : () => [MOVE, CLAIM]
 }];
 
 for(var i in Game.constructionSites) {
@@ -470,6 +471,9 @@ function miner(creep, groups) {
 }
 
 function expander(creep, groups) {
+    if(Object.keys(groups).length > 1) {
+        creep.suicide();
+    }
     if(!creep.memory.goal) {
         var home = Game.rooms[creep.memory.home];
         if(home) {
