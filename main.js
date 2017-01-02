@@ -1,4 +1,5 @@
 
+
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -132,7 +133,7 @@ function getWorkerCount(groups) {
 
 function getMiners(groups, source) {
     var x = source.pos.x, y = source.pos.y;
-    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true).filter(creep => creep.memory && creep.memory.type === "miner").length;
+    return groups.room.lookForAtArea(LOOK_CREEPS, y - 1, x - 1, y + 1, x + 1, true).filter(creep => creep.creep.memory.type === "miner", true).length;
 }
 
 function fighterBody(groups) {
