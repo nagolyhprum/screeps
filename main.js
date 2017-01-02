@@ -243,7 +243,6 @@ function addSites(room) {
         addSite(room, STRUCTURE_SPAWN);
         addSite(room, STRUCTURE_TOWER);
         addSite(room, STRUCTURE_EXTENSION);
-        addSite(room, STRUCTURE_CONTAINER);
         addSite(room, STRUCTURE_STORAGE);
     }
 }
