@@ -460,7 +460,7 @@ function miner(creep, groups) {
             var sources = creep.room.find(FIND_SOURCES, {
                 filter : source => !getMiners(groups, source)
             });
-            t = target(creep, sources);
+            t = target(creep, sources) || t;
             moveTo(creep, t, {
                 maxRooms : 1
             });
