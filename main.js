@@ -144,7 +144,7 @@ function fighterBody(groups) {
 }
 
 function workerBody(groups) {
-    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY, WORK], true);
+    return makeBody(groups, [MOVE, CARRY, WORK], [MOVE, CARRY, WORK, MOVE, CARRY, WORK], true);
 }
 
 function hasSize(r) {
