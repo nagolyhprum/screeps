@@ -30,7 +30,7 @@ var recommendations = [{
 }, {
     count : groups => {
         var exits = Game.map.describeExits(groups.room.name);
-        return groups.room.controller && groups.room.controller.my && Object.keys(exits).map(key => exits[key]).filter(room => !Game.rooms[room]).length ? 1 : 0;
+        return Object.keys(exits).filter(key => !Game.rooms[exits[key]]).length ? 1 : 0;
     },
     type : expander,
     body : () => [MOVE]
