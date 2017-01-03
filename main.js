@@ -6,7 +6,7 @@ var recommendations = [{
 }, {
     count : groups => Math.min(hasSize(groups.miner) + 1, getWorkerCount(groups)), 
     type : harvester,
-    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
+    body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE, CARRY, MOVE], hasHalf(groups))
 }, {
     count : groups => getWorkerCount(groups),
     type : upgrader,
