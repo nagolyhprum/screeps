@@ -70,7 +70,13 @@ function assignSpawns() {
     }
 }
 
+var cache;
+function clearCache() {
+    cache = {};
+}
+
 module.exports.loop = function () {
+    clearCache();
     redAlertRoom = Game.rooms[redAlertRoom] ? redAlertRoom : false;
     for(var name in Memory.creeps) {
         if(!Game.creeps[name]) {
@@ -311,7 +317,11 @@ function getStorage(room) {
 }
 
 function getHostiles(room) {
-    return [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
+    if(!cache[room] || !cache[room]["hostiles"]) {
+        var c = cache[room] = cache[room] || {};
+        c["hostiles"] = [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)]; 
+    }
+    return cache[room]["hostiles"];
 }
 
 function getDamaged(room) {
