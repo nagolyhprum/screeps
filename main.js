@@ -1,13 +1,15 @@
+function getDistance(groups) {
+    var exits = Game.map.findRoute(groups.spawn.room.name, groups.room);
+    return exits.length + 1;
+}
 
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
-    body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups))
+    body : groups => makeBody(groups, [...Array.from({length : getDistance(groups)}).map(_ => MOVE), WORK], [WORK], hasHalf(groups))
 }, {
     count : groups => {
-        var exits = Game.map.findRoute(groups.spawn.room.name, groups.room);
-        var mult = exits.length + 1;
-        return Math.min(hasSize(groups.miner) * mult + 1, getWorkerCount(groups) * mult);
+        return Math.min(hasSize(groups.miner) * getDistance(groups) + 1, getWorkerCount(groups) * getDistance(groups));
     },
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
