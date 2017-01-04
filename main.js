@@ -5,8 +5,9 @@ var recommendations = [{
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups))
 }, {
     count : groups => {
-        var mult = (!groups.room.controller || !groups.room.controller.my) ? 2 : 1;
-        return Math.min(hasSize(groups.miner) * mult + 1, getWorkerCount(groups) * 2);
+        var exits = Game.map.findRoute(groups.spawn.room.name, groups.room);
+        var mult = exits.length + 1;
+        return Math.min(hasSize(groups.miner) * mult + 1, getWorkerCount(groups) * mult);
     },
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
