@@ -98,7 +98,7 @@ module.exports.loop = function () {
     
     for(var i in Game.rooms) {
         var r = Game.rooms[i];
-        room(r, rooms[r.name], now, toSpawn);
+        room(r, rooms[i] || {}, now, toSpawn);
         addSites(r);
         var hostiles = getHostiles(r);
         r.find(FIND_MY_STRUCTURES, {
@@ -330,7 +330,7 @@ function room(room, groups, now, toSpawn) {
     var spawn = Game.spawns[room.memory.spawn];
     console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
     groups.now = now;
-    groups.spawn = spawn;
+    groups.spawn = spawn; 
     groups.room = room;
     redAlert(room);
     recommendations.forEach((recommendation, level) => {
