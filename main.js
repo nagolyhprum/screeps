@@ -300,7 +300,11 @@ function target(creep, targets) {
 }
 
 function getDroppedList(room) {
-    return room.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);;
+    if(!cache[room] || !cache[room]["dropped"]) {
+        var c = cache[room] = cache[room] || {};
+        c["dropped"] = room.find(FIND_DROPPED_ENERGY).sort((a, b) => b.amount - a.amount);
+    }
+    return cache[room]["dropped"];
 }
 
 function getStorage(room) {
