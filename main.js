@@ -4,7 +4,10 @@ var recommendations = [{
     type : miner,
     body : groups => makeBody(groups, [MOVE, WORK], [WORK], hasHalf(groups))
 }, {
-    count : groups => Math.min(hasSize(groups.miner) + 1, getWorkerCount(groups)), 
+    count : groups => {
+        var mult = (!groups.room.controller || !groups.room.controller.my) ? 2 : 1;
+        return Math.min(hasSize(groups.miner) * mult + 1, getWorkerCount(groups) * 2);
+    },
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
 }, {
