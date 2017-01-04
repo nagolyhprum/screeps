@@ -482,9 +482,8 @@ function redAlert(room) {
 
 function miner(creep, groups) {
     if(!goHome(creep)) {
-        var t = creep.memory.mine || creep.pos.findClosestByPath(FIND_SOURCES);
-        var result = creep.harvest(t);
-        if(result === ERR_NOT_IN_RANGE) {
+        var t = creep.pos.findClosestByPath(FIND_SOURCES);
+        if(creep.harvest(t) === ERR_NOT_IN_RANGE) {
             var sources = creep.room.find(FIND_SOURCES, {
                 filter : source => !getMiners(groups, source)
             });
@@ -492,8 +491,6 @@ function miner(creep, groups) {
             moveTo(creep, t, {
                 maxRooms : 1
             });
-        } else if(result === OK) {
-            creep.memory.mine = t;
         }
     }
 }
