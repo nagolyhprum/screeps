@@ -88,9 +88,17 @@ module.exports.loop = function () {
     }, []);
     var now = new Date().getTime();
     var toSpawn = [];
+    
+    var rooms = creeps.reduce((rooms, creep) => {
+        var groups = rooms[creep.memory.home] = rooms[creep.memory.home] || {};
+        var group = groups[creep.memory.type] = groups[creep.memory.type] || [];
+        group.push(creep);
+        return rooms;
+    }, {});
+    
     for(var i in Game.rooms) {
         var r = Game.rooms[i];
-        room(r, creeps, now, toSpawn);
+        room(r, rooms[r.name], now, toSpawn);
         addSites(r);
         var hostiles = getHostiles(r);
         r.find(FIND_MY_STRUCTURES, {
@@ -318,13 +326,8 @@ function getSites(room) {
 
 //ROLES
 
-function room(room, creeps, now, toSpawn) {
+function room(room, groups, now, toSpawn) {
     var spawn = Game.spawns[room.memory.spawn];
-    var groups = creeps.filter(creep => creep.memory.home === room.name).reduce((groups, creep) => {
-        var r = groups[creep.memory.type] = groups[creep.memory.type] || [];
-        r.push(creep);
-        return groups;
-    }, {});
     console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
     groups.now = now;
     groups.spawn = spawn;
