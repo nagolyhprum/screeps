@@ -1,9 +1,13 @@
 function getDistance(groups) {
     var exits = Game.map.findRoute(groups.spawn.room.name, groups.room);
-    return exits.length + 1;
+    return exits.length * 2 + 1;
 }
-
-var recommendations = [{
+ 
+var recommendations = [{ 
+    count : groups => redAlert ? 1 : 0,
+    type : quickfighter, //quick fighter for emergencies
+    body : groups => [TOUGH, TOUGH, ATTACK, RANGED_ATTACK, MOVE]
+}, {
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
     body : groups => makeBody(groups, [...Array.from({length : getDistance(groups)}).map(_ => MOVE), WORK], [WORK], hasHalf(groups))
@@ -289,7 +293,7 @@ function getStorage(room) {
     return room.find(FIND_MY_STRUCTURES, {
         filter: structure => (structure.energy < structure.energyCapacity) || (structure.store && (structure.store[RESOURCE_ENERGY] < structure.storeCapacity))
     }).sort((a, b) => (a.energyCapacity || a.storeCapacity) - (b.energyCapacity || b.storeCapacity)).reduce((sources, source) => {
-        if(source.structureType === STRUCTURE_TOWER) {
+        if(source.structureType === STRUCTURE_TOWER) { 
             sources.unshift(source);
         } else {
             sources.push(source);
@@ -502,3 +506,7 @@ function claimer(creep) {
         }
     }
 }    
+
+function quickfighter(creep, groups) {
+    fighter(creep, groups)
+}
