@@ -16,7 +16,7 @@ var recommendations = [{
 }, { 
     count : groups => redAlert ? 1 : 0,
     type : quickfighter, //quick fighter for emergencies
-    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
+    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK]
 }, {
     count : groups => getWorkerCount(groups),
     type : upgrader,
@@ -71,6 +71,7 @@ function assignSpawns() {
 }
 
 module.exports.loop = function () {
+    redAlertRoom = Game.rooms[redAlertRoom] ? redAlertRoom : false;
     for(var name in Memory.creeps) {
         if(!Game.creeps[name]) {
             delete Memory.creeps[name];
