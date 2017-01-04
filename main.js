@@ -6,7 +6,7 @@ function getDistance(groups) {
 var recommendations = [{ 
     count : groups => redAlert ? 1 : 0,
     type : quickfighter, //quick fighter for emergencies
-    body : groups => [TOUGH, TOUGH, ATTACK, RANGED_ATTACK, MOVE]
+    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
 }, {
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
@@ -274,7 +274,6 @@ function goHome(creep) {
     if(creep.room.name !== creep.memory.home && creep.memory.home !== redAlertRoom) {
         goToRoom(creep, creep.memory.home);
         return true;
-        
     }
     return false;
 }
