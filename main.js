@@ -332,6 +332,7 @@ function room(room, groups, now, toSpawn) {
     groups.now = now;
     groups.spawn = spawn;
     groups.room = room;
+    redAlert(room);
     recommendations.forEach((recommendation, level) => {
         var type = recommendation.type.name, count = groups[type] ? groups[type].length : 0;
         if(count < recommendation.count(groups)) {
@@ -347,7 +348,6 @@ function room(room, groups, now, toSpawn) {
         if(groups[type]) {
             groups[type].forEach(creep => {
                 recommendation.type(creep, groups)
-                redAlert(creep);
                 createPath(creep);
             });
         }
@@ -457,11 +457,11 @@ function fighter(creep, groups) {
 
 var redAlertRoom = "";
 
-function redAlert(creep) {
-    var hostiles = getHostiles(creep.room);
+function redAlert(room) {
+    var hostiles = getHostiles(room);
     if(hostiles.length) {
-        redAlertRoom = creep.room.name;
-    } else if(creep.room.name === redAlertRoom) {
+        redAlertRoom = room.name;
+    } else if(room.name === redAlertRoom) {
         redAlertRoom = false;
     }
 }
