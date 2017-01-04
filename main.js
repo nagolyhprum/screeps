@@ -3,11 +3,7 @@ function getDistance(groups) {
     return exits.length * 2 + 1;
 }
  
-var recommendations = [{ 
-    count : groups => redAlert ? 1 : 0,
-    type : quickfighter, //quick fighter for emergencies
-    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
-}, {
+var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
     body : groups => makeBody(groups, [...Array.from({length : getDistance(groups)}).map(_ => MOVE), WORK], [WORK], hasHalf(groups))
@@ -17,6 +13,10 @@ var recommendations = [{
     },
     type : harvester,
     body : groups => makeBody(groups, [CARRY, MOVE], [CARRY, MOVE], hasHalf(groups))
+}, { 
+    count : groups => redAlert ? 1 : 0,
+    type : quickfighter, //quick fighter for emergencies
+    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK, ATTACK]
 }, {
     count : groups => getWorkerCount(groups),
     type : upgrader,
