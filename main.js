@@ -5,7 +5,7 @@ Memory.miners = Memory.miners || {
 Memory.harvesters = Memory.harvesters || {
 };
  
-Memory.upgraders = Memory.upgraders || {
+Memory.workers = Memory.workers || {
 };
 
 module.exports.loop = function () {
@@ -16,11 +16,15 @@ module.exports.loop = function () {
         }
     }
     
+    var constructionSites = Object.keys(Game.constructionSites).map(name => Game.constructionSites[name]).sort((a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal));
+    
     var spawns = Object.keys(Game.spawns).map(name => Game.spawns[name]);
     
     var spawn = spawns[0];
     
     var rooms = Object.keys(Game.rooms).map(name => Game.rooms[name]);
+    
+    rooms.forEach(addSites);
     
     var creeps = Object.keys(Game.creeps).map(name => Game.creeps[name]);
     
@@ -33,7 +37,9 @@ module.exports.loop = function () {
     
     var sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES)], []);
     
-    var dropped = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
+    var hostiles = rooms.reduce((hostiles, room) => [...hostiles, ...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)], []);
+    
+    var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
     
     //MINER CODE
     sources.forEach(source => {
@@ -113,13 +119,13 @@ module.exports.loop = function () {
     });
     
     //WORKERS CODE
-    if(need && (!groups.upgrader || groups.upgrader.length < need)) {
+    if(need && (!groups.worker || groups.worker.length < need)) {
         sources.forEach(source => {
-            makeCreep(spawns, false, "upgrader", [MOVE, MOVE, CARRY, WORK]);
+            makeCreep(spawns, false, "worker", [MOVE, MOVE, CARRY, WORK]);
         });
     }
     
-    groups.upgrader && groups.upgrader.forEach(creep => {
+    groups.worker && groups.worker.forEach(creep => {
         if(isWorking(creep)) {
             var target = creep.room.controller;
             if(creep.upgradeController(target) === ERR_NOT_IN_RANGE) {
@@ -136,15 +142,27 @@ module.exports.loop = function () {
     
     //FIGHTER CODE
     
-    if((groups.upgrader && groups.upgrader.length >= need) && (groups.harvester && groups.harvester.length >= need) && (groups.miner && groups.miner.length >= sources.length)) {
+    if((groups.worker && groups.worker.length >= need) && (groups.harvester && groups.harvester.length >= need) && (groups.miner && groups.miner.length >= sources.length)) {
         spawn.createCreep([TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK], undefined, {
             type : "fighter"
         });
     }
     
     groups.fighter && groups.fighter.forEach(creep => {
-        creep.moveTo(25, 40);
-    })
+        creep.moveTo(40, 40);
+        return;
+        var goal = "W1N3";
+        if(creep.room.name === goal) {
+            var hostile = creep.pos.findClosestByPath(hostiles);
+            if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(hostile);
+            }
+        } else {
+            var route = Game.map.findRoute(creep.room.name, goal)[0];
+            var path = creep.pos.findClosestByRange(route.exit);
+            creep.moveTo(path);
+        }
+    });
 };
 
 function isWorking(creep) {
@@ -168,5 +186,48 @@ function makeCreep(spawns, id, type, body) {
             Memory[plural][id] = result;
         }   
     }
-    
+}
+
+function addSite(room, site) {
+    var cs = room.find(FIND_MY_CONSTRUCTION_SITES);
+    if(cs.length < MAX_CONSTRUCTION_SITES) {
+        var max = CONTROLLER_STRUCTURES[site][room.controller ? room.controller.level : 0];
+        var built = room.find(FIND_MY_STRUCTURES, {
+            filter : structure => structure.structureType === site 
+        }).length;
+        var toBuild = room.find(FIND_MY_CONSTRUCTION_SITES, {
+            filter : cs => cs.structureType === site
+        }).length;
+        if(built + toBuild < max) {
+            squareFrom(25, 25, (x, y) => {
+                var terrain = room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true);
+                var hasWall = terrain.reduce((hasWall, terrain) => hasWall || terrain.terrain === "wall", false);
+                var goodSpot = (x + y) % 2 === 1 && !hasWall;
+                var result = goodSpot ? room.createConstructionSite(x, y, site) : false;
+                return x === 0 || result === OK;
+            });   
+        }
+    }
+}
+
+function addSites(room) {
+    if(room.controller && room.controller.my) {
+        addSite(room, STRUCTURE_SPAWN);
+        addSite(room, STRUCTURE_TOWER);
+        addSite(room, STRUCTURE_EXTENSION);
+        addSite(room, STRUCTURE_STORAGE);
+    }
+}
+
+function squareFrom(x, y, callback) {
+    var range = 1;
+    while(true) {
+        var range2 = 2 * range;
+        for(var i = 0; i < range2; i++) { //top left to right
+            if(callback(x - range + i, y - range) || callback(x - range, y - range + i) || callback(x + range, y - range + i) || callback(x - range + i, y + range)) {
+                return;
+            }
+        }
+        range++;
+    }
 }
