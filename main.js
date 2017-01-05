@@ -150,17 +150,11 @@ module.exports.loop = function () {
     
     groups.fighter && groups.fighter.forEach(creep => {
         creep.moveTo(40, 40);
-        return;
-        var goal = "W1N3";
-        if(creep.room.name === goal) {
-            var hostile = creep.pos.findClosestByPath(hostiles);
+        var hostile = creep.pos.findClosestByPath(hostiles);
+        if(hostiles.length) {
             if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(hostile);
             }
-        } else {
-            var route = Game.map.findRoute(creep.room.name, goal)[0];
-            var path = creep.pos.findClosestByRange(route.exit);
-            creep.moveTo(path);
         }
     });
 };
