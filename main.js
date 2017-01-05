@@ -6,7 +6,9 @@ function getDistance(groups) {
 var recommendations = [{
     count : groups => Math.min(hasSize(groups.harvester) + 1, getWorkerCount(groups)),
     type : miner,
-    body : groups => makeBody(groups, [...Array.from({length : getDistance(groups)}).map(_ => MOVE), WORK], [WORK], hasHalf(groups))
+    body : groups => makeBody(groups, [...Array.from({
+        length : Math.min(Object.keys(Game.spawns).length + 1, getDistance(groups))
+    }).map(_ => MOVE), WORK], [WORK], hasHalf(groups))
 }, {
     count : groups => {
         return Math.min(hasSize(groups.miner) * getDistance(groups) + 1, getWorkerCount(groups) * getDistance(groups));
@@ -16,7 +18,7 @@ var recommendations = [{
 }, { 
     count : groups => redAlert ? 1 : 0,
     type : quickfighter, //quick fighter for emergencies
-    body : groups => [TOUGH, TOUGH, MOVE, MOVE, ATTACK]
+    body : groups => [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK]
 }, {
     count : groups => getWorkerCount(groups),
     type : upgrader,
