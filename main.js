@@ -107,10 +107,14 @@ module.exports.loop = function () {
         room(r, rooms[i] || {}, now, toSpawn);
         addSites(r);
         var hostiles = getHostiles(r);
+        var my = r.find(FIND_MY_CREEPS).filter(creep => creep.hits < creep.maxHits);
         r.find(FIND_MY_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_TOWER
         }).forEach(tower => {
             hostiles.forEach(hostile => tower.attack(hostile));
+            if(!hostiles.length) {
+                creeps.forEach(creep => tower.heal(creep));
+            }
         });
     }
     toSpawn.sort((a, b) => a.level - b.level);
