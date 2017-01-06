@@ -39,7 +39,9 @@ module.exports.loop = function () {
     var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
     
     var stores = rooms.reduce((stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
-        filter : structure => structure.energy < structure.energyCapacity
+        
+        filter : structure => structure.storeCapacity < _.sum(structure.store) || structure.energy < structure.energyCapacity
+        
     })], []).sort((a, b) => {
         var structures = [STRUCTURE_TOWER];
         if(structures.includes(a.structureType)) {
@@ -47,7 +49,7 @@ module.exports.loop = function () {
         } else if(structures.includes(b.structureType)) {
             return 1;
         }
-        return 0;
+        return (a.storeCapacity || a.energyCapacity) - (b.storeCapacity || b.energyCapacity);
     });
     
     towers.forEach(tower => {
@@ -59,7 +61,7 @@ module.exports.loop = function () {
         var body = [];
         var cost = 0;
         var max = spawn.room.energyCapacityAvailable;
-        var parts = source.energyCapacity / 300 / 2;
+        var parts = Math.floor(source.energyCapacity / 300 / 2);
         for(var i = 0; i < parts; i++) {
             cost += 150;
             if(cost <= max) {
@@ -146,7 +148,7 @@ module.exports.loop = function () {
                     creep.moveTo(cs);
                 }
             } else {
-                var target = creep.room.controller;
+                var target = spawn.room.controller;
                 if(creep.upgradeController(target) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(target);
                 }
@@ -238,6 +240,7 @@ function addSites(room) {
         addSite(room, STRUCTURE_TOWER);
         addSite(room, STRUCTURE_EXTENSION);
         addSite(room, STRUCTURE_STORAGE);
+        addSite(room, STRUCTURE_CONTAINER);
     }
 }
 
