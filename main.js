@@ -1,11 +1,4 @@
-
 Memory.miners = Memory.miners || {
-};
-
-Memory.harvesters = Memory.harvesters || {
-};
- 
-Memory.workers = Memory.workers || {
 };
 
 module.exports.loop = function () {
@@ -28,6 +21,10 @@ module.exports.loop = function () {
     
     var creeps = Object.keys(Game.creeps).map(name => Game.creeps[name]);
     
+    var towers = rooms.reduce((towers, room) => [...towers, room.find(FIND_STRUCTURES, {
+        filter : structure => structure.structureType
+    })], [])
+    
     var groups = creeps.reduce((groups, creep) => {
         var type = creep.memory.type;
         var group = groups[type] = groups[type] || [];
@@ -41,11 +38,27 @@ module.exports.loop = function () {
     
     var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
     
+    var stores = rooms.reduce((stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
+        filter : structure => structure.energy < structure.energyCapacity
+    })], []).sort((a, b) => {
+        var structures = [STRUCTURE_TOWER];
+        if(structures.includes(a.structureType)) {
+            return -1;
+        } else if(structures.includes(b.structureType)) {
+            return 1;
+        }
+        return 0;
+    });
+    
+    towers.forEach(tower => {
+        
+    });
+    
     //MINER CODE
     sources.forEach(source => {
         var body = [];
         var cost = 0;
-        var max = spawn.energyCapacity;
+        var max = spawn.room.energyCapacityAvailable;
         var parts = source.energyCapacity / 300 / 2;
         for(var i = 0; i < parts; i++) {
             cost += 150;
@@ -89,7 +102,7 @@ module.exports.loop = function () {
     
     var ticks_to_travel = total_time / 1000 / (groups.miner ? groups.miner.length : 1) * 2; //round trip
     
-    var capacity = 50;
+    var capacity = 150;
     
     var need = Math.floor(resource_per_tick * ticks_to_travel / capacity / 2);
     
@@ -99,20 +112,20 @@ module.exports.loop = function () {
     
     if(need && (!groups.harvester || groups.harvester.length < need)) {
         sources.forEach(source => {
-            makeCreep(spawns, false, "harvester", [MOVE, CARRY]);
+            makeCreep(spawns, false, "harvester", [MOVE, CARRY, MOVE, CARRY, MOVE, CARRY]);
         });
     }
     
     groups.harvester && groups.harvester.forEach(creep => {
         if(isWorking(creep)) {
-            var target = spawns[0];
-            if(creep.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
+            var store = target(creep, stores);
+            if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(store);
             }
         } else {
-            var target = dropped.find(dropped => dropped.id === creep.memory.id) || dropped[0];
-            if(creep.pickup(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
+            var d = target(creep, dropped);
+            if(creep.pickup(d) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(d);
                 creep.memory.id = target.id;
             }
         }
@@ -125,11 +138,18 @@ module.exports.loop = function () {
         });
     }
     
-    groups.worker && groups.worker.forEach(creep => {
+    groups.worker && groups.worker.forEach((creep, i) => {
         if(isWorking(creep)) {
-            var target = creep.room.controller;
-            if(creep.upgradeController(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
+            if(constructionSites.length && i < need / 2) {
+                var cs = constructionSites[0];
+                if(creep.build(cs) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(cs);
+                }
+            } else {
+                var target = creep.room.controller;
+                if(creep.upgradeController(target) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(target);
+                }
             }
         } else {
             var target = dropped.find(dropped => dropped.id === creep.memory.id) || dropped[0];
@@ -143,7 +163,7 @@ module.exports.loop = function () {
     //FIGHTER CODE
     
     if((groups.worker && groups.worker.length >= need) && (groups.harvester && groups.harvester.length >= need) && (groups.miner && groups.miner.length >= sources.length)) {
-        spawn.createCreep([TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK], undefined, {
+        spawn.createCreep([TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK], undefined, {
             type : "fighter"
         });
     }
@@ -152,12 +172,20 @@ module.exports.loop = function () {
         creep.moveTo(40, 40);
         var hostile = creep.pos.findClosestByPath(hostiles);
         if(hostiles.length) {
-            if(creep.attack(hostile) === ERR_NOT_IN_RANGE) {
+            if(creep.attack(hostile) === ERR_NOT_IN_RANGE || creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(hostile);
             }
         }
     });
 };
+
+function target(creep, targets) {
+    var target = targets.find(target => target.id === creep.memory.target) || targets[0];
+    if(target) {
+        creep.memory.target = target.id;
+    }
+    return target;
+}
 
 function isWorking(creep) {
     if(!creep.memory.working && creep.carry.energy === creep.carryCapacity) { //if i am gathering and i am done
@@ -170,8 +198,8 @@ function isWorking(creep) {
 
 function makeCreep(spawns, id, type, body) {
     var plural = `${type}s`;
-    if(!Game.creeps[Memory[plural][id]]) {
-        var result = spawns[0].createCreep(body, undefined, {
+    if(!Memory[plural] || !Game.creeps[Memory[plural][id]]) {
+        var result = spawns[0].createCreep(body, "creep_" + (new Date()).getTime(), {
             type,
             id,
             start : new Date().getTime()
