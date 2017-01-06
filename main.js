@@ -1,7 +1,10 @@
-Memory.miners = Memory.miners || {
-};
+Memory.miners = Memory.miners || {};
+
+Memory.claimers = Memory.claimers || {}
 
 module.exports.loop = function () {
+    
+    //INIT
     
     for(var i in Memory.creeps) {
         if(!Game.creeps[i]) {
@@ -17,7 +20,13 @@ module.exports.loop = function () {
     
     var rooms = Object.keys(Game.rooms).map(name => Game.rooms[name]);
     
-    rooms.forEach(addSites);
+    var controllers = rooms.map(room => room.controller).filter(_ => _);
+    
+    var my_controllers = controllers.filter(controller => controller.my);
+    
+    var not_my_controllers = controllers.filter(controller => !controller.my);
+    
+    var toSpawn = [];
     
     var creeps = Object.keys(Game.creeps).map(name => Game.creeps[name]);
     
@@ -39,7 +48,7 @@ module.exports.loop = function () {
     var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
     
     var stores = rooms.reduce((stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
-        filter : structure => structure.storeCapacity < _.sum(structure.store) || structure.energy < structure.energyCapacity
+        filter : structure => _.sum(structure.store) < structure.storeCapacity || structure.energy < structure.energyCapacity
     })], []).sort((a, b) => {
         var structures = [STRUCTURE_TOWER];
         if(structures.includes(a.structureType)) {
@@ -50,13 +59,22 @@ module.exports.loop = function () {
         return (a.storeCapacity || a.energyCapacity) - (b.storeCapacity || b.energyCapacity);
     });
     
+    var storage = rooms.reduce((storage, room) => [...storage, ...room.find(FIND_STRUCTURES, {
+        filter : structure => _.sum(structure.store)
+    })], []);
+    
+    var hurt = creeps.filter(creep => creep.hits < creep.hitsMax);
+    
+    //DO STUFF
+    
+    rooms.forEach(addSites);
+    
     towers.forEach(tower => {
         var hostile = tower.pos.findClosestByRange(hostiles);
         if(hostile) {
             tower.attack(hostile);
         } else {
-            var hurt = creeps.find(creep => creep.hits < creep.hitsMax);
-            tower.heal(hurt);
+            tower.heal(tower.pos.findClosestByRange(hurt));
         }
     });
     
@@ -73,18 +91,15 @@ module.exports.loop = function () {
                 body.push(WORK);
             }
         }
-        makeCreep(spawns, source.id, "miner", body);
+        makeCreep(toSpawn, source.id, "miner", body);
     });
     
     var total_time = 0, total_works = 0;
     groups.miner && groups.miner.forEach(creep => {
-        
         var closest = creep.pos.findClosestByRange(dropped);
-        
         if(closest) {
             creep.say(closest.energy);
         }
-        
         var source = sources.find(source => source.id === creep.memory.id);
         switch(creep.harvest(source)) {
             case OK : {
@@ -104,22 +119,18 @@ module.exports.loop = function () {
         total_works += creep.getActiveBodyparts(WORK);
     });
     
+    //CRUNCH SOME NUMBERS
     var resource_per_tick = total_works * 2;
-    
     var ticks_to_travel = total_time / 1000 / (groups.miner ? groups.miner.length : 1) * 2; //round trip
-    
     var capacity = 150;
+    var need = Math.floor(resource_per_tick * ticks_to_travel / capacity);
     
-    var need = Math.floor(resource_per_tick * ticks_to_travel / capacity / 2);
-    
-    console.log(need);
+    var max_workers = Math.min(need, my_controllers.length * 5);
     
     //HARVESTERS CODE
     
-    if(need && (!groups.harvester || groups.harvester.length < need)) {
-        sources.forEach(source => {
-            makeCreep(spawns, false, "harvester", [MOVE, CARRY, MOVE, CARRY, MOVE, CARRY]);
-        });
+    if((groups.harvester ? groups.harvester.length : 0) < need) {
+        makeCreep(toSpawn, false, "harvester", [MOVE, CARRY, MOVE, CARRY, MOVE, CARRY]);
     }
     
     groups.harvester && groups.harvester.forEach(creep => {
@@ -138,51 +149,106 @@ module.exports.loop = function () {
     });
     
     //WORKERS CODE
-    if(need && (!groups.worker || groups.worker.length < need)) {
+    
+    if((groups.worker ? groups.worker.length : 0) < max_workers) {
         sources.forEach(source => {
-            makeCreep(spawns, false, "worker", [MOVE, MOVE, CARRY, WORK]);
+            makeCreep(toSpawn, false, "worker", [MOVE, MOVE, CARRY, WORK]);
         });
     }
     
     groups.worker && groups.worker.forEach((creep, i) => {
         if(isWorking(creep)) {
-            if(constructionSites.length && i < need / 2) {
+            if(constructionSites.length && i < max_workers / 2) {
                 var cs = constructionSites[0];
                 if(creep.build(cs) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(cs);
                 }
             } else {
-                var target = spawn.room.controller;
-                if(creep.upgradeController(target) === ERR_NOT_IN_RANGE) {
-                    creep.moveTo(target);
+                var c = my_controllers[0];
+                if(creep.upgradeController(c) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(c);
                 }
             }
         } else {
-            var target = dropped.find(dropped => dropped.id === creep.memory.id) || dropped[0];
-            if(creep.pickup(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target);
-                creep.memory.id = target.id;
+            var d = target(creep, storage) || target(creep, dropped);
+            if(creep.withdraw(d, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE || creep.pickup(d) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(d);
             }
         }
     });
     
     //FIGHTER CODE
     
-    if((groups.worker && groups.worker.length >= need) && (groups.harvester && groups.harvester.length >= need) && (groups.miner && groups.miner.length >= sources.length)) {
-        spawn.createCreep([TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK], undefined, {
-            type : "fighter"
-        });
+    if((groups.fighter ? groups.fighter.length : 0) < 5) {
+        makeCreep(toSpawn, false, "fighter", [TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK]);
     }
     
     groups.fighter && groups.fighter.forEach(creep => {
-        creep.moveTo(40, 40);
-        var hostile = creep.pos.findClosestByPath(hostiles);
-        if(hostiles.length) {
-            if(creep.attack(hostile) === ERR_NOT_IN_RANGE || creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
+        var hostile = target(creep, hostiles);
+        if(hostile) {
+            if(creep.attack(hostile) === ERR_NOT_IN_RANGE | creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(hostile);
+            }
+        } else {
+            creep.moveTo(40, 40);
+        }
+    });
+    
+    if((groups.claimer ? groups.claimer.length : 0) < not_my_controllers.length) {
+        makeCreep(toSpawn, false, "claimer", [MOVE, CLAIM]);
+    }
+    
+    not_my_controllers.forEach(ctrl => {
+        if(!Game.creeps[Memory.claimers[ctrl.id]]) {
+            var creep = (groups.claimer || []).find(creep => !creep.memory.id);
+            if(creep) {
+                Memory.claimers[ctrl.id] = creep.name;
+                creep.memory.id = ctrl.id;
             }
         }
     });
+    
+    groups.claimer && groups.claimer.forEach(creep => {
+       var ctrl = not_my_controllers.find(ctrl => ctrl.id === creep.memory.id);
+       creep.say(ctrl)
+       if(ctrl) {
+           creep.moveTo(ctrl);
+       }
+    });
+    
+    if((groups.expander ? groups.expander.length : 0) < 1) {
+        makeCreep(toSpawn, false, "expander", [MOVE]);
+    }
+    
+    groups.expander && groups.expander.forEach(creep => {
+        if(!creep.memory.id) {
+            rooms.forEach(room => {
+               var exits = Game.map.describeExits(room.name); 
+               var unvisited = Object.keys(exits).map(key => exits[key]).filter(name => !Game.rooms[name]);
+               creep.memory.id = creep.memory.id || unvisited[0];
+            });
+        } else {
+            if(creep.room.name !== creep.memory.id) {
+                var route = Game.map.findRoute(creep.room.name, creep.memory.id);
+                var path = creep.pos.findClosestByRange(route[0].exit);
+                creep.moveTo(path);
+            } else {
+                creep.moveTo(25, 25);
+                creep.say("mine");
+            }
+        }
+    });
+    
+    if(toSpawn.length) {
+        for(var i = 0; i < spawns.length; i++) {
+            if(toSpawn[0](spawns[i])) {
+                break;
+            }
+        }
+    }
+    
+    console.log(toSpawn.length, need, dropped.reduce((total, dropped) => dropped.energy + total, 0) / 150);
+    console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
 };
 
 function target(creep, targets) {
@@ -202,17 +268,22 @@ function isWorking(creep) {
     return creep.memory.working;
 }
 
-function makeCreep(spawns, id, type, body) {
+function makeCreep(toSpawn, id, type, body) {
     var plural = `${type}s`;
-    if(!Memory[plural] || !Game.creeps[Memory[plural][id]]) {
-        var result = spawns[0].createCreep(body, "creep_" + (new Date()).getTime(), {
-            type,
-            id,
-            start : new Date().getTime()
+    if(!id || !Game.creeps[Memory[plural][id]]) {
+        toSpawn.push(spawn => {
+            var result = spawn.createCreep(body, "creep_" + (new Date()).getTime(), {
+                type,
+                id,
+                start : new Date().getTime()
+            });
+            if(_.isString(result)) {
+                if(id) {
+                    Memory[plural][id] = result;
+                }   
+                return true;
+            }
         });
-        if(_.isString(result) && id) {
-            Memory[plural][id] = result;
-        }   
     }
 }
 
