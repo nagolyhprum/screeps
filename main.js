@@ -21,8 +21,8 @@ module.exports.loop = function () {
     
     var creeps = Object.keys(Game.creeps).map(name => Game.creeps[name]);
     
-    var towers = rooms.reduce((towers, room) => [...towers, room.find(FIND_STRUCTURES, {
-        filter : structure => structure.structureType
+    var towers = rooms.reduce((towers, room) => [...towers, ...room.find(FIND_STRUCTURES, {
+        filter : structure => structure.structureType === STRUCTURE_TOWER
     })], [])
     
     var groups = creeps.reduce((groups, creep) => {
@@ -39,9 +39,7 @@ module.exports.loop = function () {
     var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
     
     var stores = rooms.reduce((stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
-        
         filter : structure => structure.storeCapacity < _.sum(structure.store) || structure.energy < structure.energyCapacity
-        
     })], []).sort((a, b) => {
         var structures = [STRUCTURE_TOWER];
         if(structures.includes(a.structureType)) {
@@ -53,7 +51,13 @@ module.exports.loop = function () {
     });
     
     towers.forEach(tower => {
-        
+        var hostile = tower.pos.findClosestByRange(hostiles);
+        if(hostile) {
+            tower.attack(hostile);
+        } else {
+            var hurt = creeps.find(creep => creep.hits < creep.hitsMax);
+            tower.heal(hurt);
+        }
     });
     
     //MINER CODE
