@@ -123,9 +123,9 @@ module.exports.loop = function () {
     var resource_per_tick = total_works * 2;
     var ticks_to_travel = total_time / 1000 / (groups.miner ? groups.miner.length : 1) * 2; //round trip
     var capacity = 150;
-    var need = Math.floor(resource_per_tick * ticks_to_travel / capacity);
+    var need = Math.min(sources.length * 5, Math.floor(resource_per_tick * ticks_to_travel / capacity)); //CONTROLL SIZE
     
-    var max_workers = Math.min(need, my_controllers.length * 5);
+    var max_workers = Math.min(need, my_controllers.length * 10);
     
     //HARVESTERS CODE
     
@@ -179,7 +179,7 @@ module.exports.loop = function () {
     
     //FIGHTER CODE
     
-    if((groups.fighter ? groups.fighter.length : 0) < 5) {
+    if((groups.fighter ? groups.fighter.length : 0) < 5 * rooms.length) {
         makeCreep(toSpawn, false, "fighter", [TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK]);
     }
     
@@ -210,9 +210,10 @@ module.exports.loop = function () {
     
     groups.claimer && groups.claimer.forEach(creep => {
        var ctrl = not_my_controllers.find(ctrl => ctrl.id === creep.memory.id);
-       creep.say(ctrl)
        if(ctrl) {
-           creep.moveTo(ctrl);
+            if(creep.reserveController(ctrl) === ERR_NOT_IN_RANGE) {
+                creep.moveTo(ctrl);
+            }
        }
     });
     
@@ -247,7 +248,7 @@ module.exports.loop = function () {
         }
     }
     
-    console.log(toSpawn.length, need, dropped.reduce((total, dropped) => dropped.energy + total, 0) / 150);
+    console.log(toSpawn.length, need, Math.floor(dropped.reduce((total, dropped) => dropped.energy + total, 0) / 150));
     console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
 };
 
