@@ -1,6 +1,56 @@
 Memory.miners = Memory.miners || {};
 
-Memory.claimers = Memory.claimers || {}
+Memory.claimers = Memory.claimers || {};
+
+var sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal);
+var sortDropped = (a, b) => b.energy - a.energy;
+var sortStores = (a, b) => {
+    var structures = [STRUCTURE_TOWER];
+    if(structures.includes(a.structureType)) {
+        return -1;
+    } else if(structures.includes(b.structureType)) {
+        return 1;
+    }
+    return (a.storeCapacity || a.energyCapacity) - (b.storeCapacity || b.energyCapacity);
+};
+
+var mapCS = name => Game.constructionSites[name];
+var mapSpawns = name => Game.spawns[name];
+var mapRooms = name => Game.rooms[name];
+var mapControllers = room => room.controller;
+var mapCreeps = name => Game.creeps[name];
+
+var filterIsTrue = _ => _;
+var filterMyControllers = controller => controller.my;
+var filterNotMyControllers = controller => !controller.my;
+var filterHurt = creep => creep.hits < creep.hitsMax;
+
+var findTowers = {
+    filter : structure => structure.structureType === STRUCTURE_TOWER
+};
+var findDamaged = {
+    filter : structure => structure.hits < structure.hitsMax && structure.structureType !== STRUCTURE_CONTAINER
+};
+var findStorage = {
+    filter : structure => _.sum(structure.store)
+};
+
+var reduceTowers = (towers, room) => [...towers, ...room.find(FIND_STRUCTURES, findTowers)];
+var reduceDamaged = (damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, findDamaged)];
+var reduceGroups = (groups, creep) => {
+    var type = creep.memory.type;
+    var group = groups[type] = groups[type] || [];
+    group.push(creep);
+    return groups; 
+};
+var reduceSources = (sources, room) => [...sources, ...room.find(FIND_SOURCES)];
+var reduceHostiles = (hostiles, room) => [...hostiles, ...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
+var reduceDropped = (dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)];
+var reduceStores = (stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
+    filter : structure => _.sum(structure.store) < structure.storeCapacity || structure.energy < structure.energyCapacity
+})];
+var reduceStorage = (storage, room) => [...storage, ...room.find(FIND_STRUCTURES, findStorage)];
+
 
 module.exports.loop = function () {
     
@@ -12,58 +62,41 @@ module.exports.loop = function () {
         }
     }
     
-    var constructionSites = Object.keys(Game.constructionSites).map(name => Game.constructionSites[name]).sort((a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal));
+    var constructionSites = Object.keys(Game.constructionSites).map(mapCS).sort(sortCS);
     
-    var spawns = Object.keys(Game.spawns).map(name => Game.spawns[name]);
+    var spawns = Object.keys(Game.spawns).map(mapSpawns);
     
     var spawn = spawns[0];
     
-    var rooms = Object.keys(Game.rooms).map(name => Game.rooms[name]);
+    var rooms = Object.keys(Game.rooms).map(mapRooms);
     
-    var controllers = rooms.map(room => room.controller).filter(_ => _);
+    var controllers = rooms.map(mapControllers).filter(filterIsTrue);
     
-    var my_controllers = controllers.filter(controller => controller.my);
+    var my_controllers = controllers.filter(filterMyControllers);
     
-    var not_my_controllers = controllers.filter(controller => !controller.my);
+    var not_my_controllers = controllers.filter(filterNotMyControllers);
     
     var toSpawn = [];
     
-    var creeps = Object.keys(Game.creeps).map(name => Game.creeps[name]);
+    var creeps = Object.keys(Game.creeps).map(mapCreeps);
     
-    var towers = rooms.reduce((towers, room) => [...towers, ...room.find(FIND_STRUCTURES, {
-        filter : structure => structure.structureType === STRUCTURE_TOWER
-    })], [])
+    var towers = rooms.reduce(reduceTowers, []);
     
-    var groups = creeps.reduce((groups, creep) => {
-        var type = creep.memory.type;
-        var group = groups[type] = groups[type] || [];
-        group.push(creep);
-        return groups; 
-    }, {});
+    var damaged = rooms.reduce(reduceDamaged, [])
     
-    var sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES)], []);
+    var groups = creeps.reduce(reduceGroups, {});
     
-    var hostiles = rooms.reduce((hostiles, room) => [...hostiles, ...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)], []);
+    var sources = rooms.reduce(reduceSources, []);
     
-    var dropped = rooms.reduce((dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)], []).sort((a, b) => b.energy - a.energy);
+    var hostiles = rooms.reduce(reduceHostiles, []);
     
-    var stores = rooms.reduce((stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
-        filter : structure => _.sum(structure.store) < structure.storeCapacity || structure.energy < structure.energyCapacity
-    })], []).sort((a, b) => {
-        var structures = [STRUCTURE_TOWER];
-        if(structures.includes(a.structureType)) {
-            return -1;
-        } else if(structures.includes(b.structureType)) {
-            return 1;
-        }
-        return (a.storeCapacity || a.energyCapacity) - (b.storeCapacity || b.energyCapacity);
-    });
+    var dropped = rooms.reduce(reduceDropped, []).sort(sortDropped);
     
-    var storage = rooms.reduce((storage, room) => [...storage, ...room.find(FIND_STRUCTURES, {
-        filter : structure => _.sum(structure.store)
-    })], []);
+    var stores = rooms.reduce(reduceStores, []).sort(sortStores);
     
-    var hurt = creeps.filter(creep => creep.hits < creep.hitsMax);
+    var storage = rooms.reduce(reduceStorage, []);
+    
+    var hurt = creeps.filter(filterHurt);
     
     //DO STUFF
     
@@ -158,13 +191,18 @@ module.exports.loop = function () {
     
     groups.worker && groups.worker.forEach((creep, i) => {
         if(isWorking(creep)) {
-            if(constructionSites.length && i < max_workers / 2) {
+            if(damaged.length && i < max_workers / 2) {
+                var d = target(creep, damaged);
+                if(creep.repair(d) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(d);
+                }
+            } else if(constructionSites.length && i < max_workers / 2) {
                 var cs = constructionSites[0];
                 if(creep.build(cs) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(cs);
                 }
             } else {
-                var c = my_controllers[0];
+                var c = my_controllers[i % my_controllers.length];
                 if(creep.upgradeController(c) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(c);
                 }
@@ -179,8 +217,23 @@ module.exports.loop = function () {
     
     //FIGHTER CODE
     
+    var fighterBaseBody = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK]; //450
+    var fighterBaseCost = 450;
+    var fighterBody = [];
+    var fighterCost = 0;
+    
+    var max = rooms.reduce((max, room) => Math.max(room.energyCapacityAvailable, max), 0);
+    
+    for(var i = 0; i < my_controllers.length; i++) {
+        fighterCost += fighterBaseCost;
+        if(fighterCost <= max) {
+            fighterBody = [...fighterBody, ...fighterBaseBody];
+        }
+    }
+    
+    
     if((groups.fighter ? groups.fighter.length : 0) < 5 * rooms.length) {
-        makeCreep(toSpawn, false, "fighter", [TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK]);
+        makeCreep(toSpawn, false, "fighter", fighterBody);
     }
     
     groups.fighter && groups.fighter.forEach(creep => {
@@ -213,6 +266,14 @@ module.exports.loop = function () {
        if(ctrl) {
             if(creep.reserveController(ctrl) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(ctrl);
+            } else {
+                var room = creep.room;
+                if(!room.memory.freeSpaces) {
+                    room.memory.freeSpaces = room.lookForAtArea(LOOK_TERRAIN, 5, 5, 45, 45, true).filter(terrain => terrain.terrain === "plain").length;
+                }
+                if(room.memory.freeSpaces >= 1000) {
+                    creep.claimController(ctrl);
+                }
             }
        }
     });
@@ -231,8 +292,11 @@ module.exports.loop = function () {
         } else {
             if(creep.room.name !== creep.memory.id) {
                 var route = Game.map.findRoute(creep.room.name, creep.memory.id);
-                var path = creep.pos.findClosestByRange(route[0].exit);
-                creep.moveTo(path);
+                var exit = creep.pos.findClosestByPath(route[0].exit);
+                var path = creep.pos.findPathTo(exit, { 
+                    maxRooms : 1
+                });
+                creep.moveByPath(path);
             } else {
                 creep.moveTo(25, 25);
                 creep.say("mine");
@@ -248,7 +312,7 @@ module.exports.loop = function () {
         }
     }
     
-    console.log(toSpawn.length, need, Math.floor(dropped.reduce((total, dropped) => dropped.energy + total, 0) / 150));
+    console.log(toSpawn.length, need, Math.floor(dropped.reduce((total, dropped) => (dropped.energy || 0) + total, 0) / 150));
     console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
 };
 
@@ -316,7 +380,6 @@ function addSites(room) {
         addSite(room, STRUCTURE_TOWER);
         addSite(room, STRUCTURE_EXTENSION);
         addSite(room, STRUCTURE_STORAGE);
-        addSite(room, STRUCTURE_CONTAINER);
     }
 }
 
