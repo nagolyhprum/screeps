@@ -2,6 +2,8 @@ Memory.miners = Memory.miners || {};
 
 Memory.harvesters = Memory.harvesters || {};
 
+var assignment = 0;
+
 Memory.claimers = Memory.claimers || {};
 
 var isBuilder = false;
@@ -48,7 +50,7 @@ var reduceGroups = (groups, creep) => {
     return groups; 
 };
 var reduceSources = (sources, room) => [...sources, ...room.find(FIND_SOURCES)];
-var reduceHostiles = (hostiles, room) => [...hostiles, ...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
+var reduceHostiles = (hostiles, room) => [...room.find(FIND_HOSTILE_CREEPS), ...hostiles, ...room.find(FIND_HOSTILE_STRUCTURES)];
 var reduceDropped = (dropped, room) => [...dropped, ...room.find(FIND_DROPPED_RESOURCES)];
 var reduceStores = (stores, room) => [...stores, ...room.find(FIND_STRUCTURES, {
     filter : structure => _.sum(structure.store) < structure.storeCapacity || structure.energy < structure.energyCapacity
@@ -72,7 +74,9 @@ module.exports.loop = function () {
     
     var spawn = spawns[0];
     
-    var rooms = Object.keys(Game.rooms).map(mapRooms);
+    var rooms = Object.keys(Game.rooms).map(mapRooms).filter(room => room.find(FIND_STRUCTURES, {
+        filter : structure => structure.structureType === STRUCTURE_KEEPER_LAIR
+    }).length == 0); 
     
     var controllers = rooms.map(mapControllers).filter(filterIsTrue);
     
@@ -118,12 +122,12 @@ module.exports.loop = function () {
     });
     
     //MINER CODE
-    if(!groups.miner || (groups.miner && groups.harvester)) {
+    if(!groups.miner || groups.harvester && (groups.miner.length <= groups.harvester.length)) {
         sources.forEach(source => {
             var body = [MOVE, WORK];
             var cost = 150;
             var parts = Math.floor(source.energyCapacity / 300 / 2);
-            for(var i = 0; i < parts && groups.miner; i++) {
+            for(var i = 0; i < parts && groups.upgrader; i++) {
                 cost += 150;
                 if(cost <= max) {
                     body.push(MOVE);
@@ -140,6 +144,9 @@ module.exports.loop = function () {
             creep.say(closest.energy);
         }
         var source = sources.find(source => source.id === creep.memory.id);
+        if(!source) {
+            //creep.suicide();
+        }
         switch(creep.harvest(source)) {
             case OK : {
                 if(!creep.memory.finish) {
@@ -162,7 +169,7 @@ module.exports.loop = function () {
         var body = [MOVE, CARRY];
         var cost = 100;
         var parts = 100;
-        for(var i = 0; i < parts && groups.harvester; i++) {
+        for(var i = 0; i < parts && groups.upgrader; i++) {
             cost += 150;
             if(cost <= max) {
                 body.push(MOVE);
@@ -174,15 +181,22 @@ module.exports.loop = function () {
     
     groups.harvester && groups.harvester.forEach(creep => {
         if(isWorking(creep)) {
-            var store = target(creep, stores);
+            var store = creep.pos.findClosestByRange(stores);
+            if(!store || store.structureType === STRUCTURE_STORAGE) {
+                store = stores[0];
+            }
             if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(store);
             }
         } else {
             var source = Game.getObjectById(creep.memory.id);
-            var d = source.pos.findClosestByRange(dropped);
-            if(creep.pickup(d) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(d);
+            if(source) {
+                var d = source.pos.findClosestByRange(dropped);
+                if(creep.pickup(d) === ERR_NOT_IN_RANGE) {
+                    creep.moveTo(d);
+                }
+            } else {
+                creep.memory.id = sources[0].id;
             }
         }
     });
@@ -195,9 +209,12 @@ module.exports.loop = function () {
         });
     }
     
-    groups.worker && groups.worker.forEach((creep, i) => {
+    groups.worker && groups.worker.forEach(creep => {
         if(!("builder" in creep.memory)) {
             creep.memory.builder = isBuilder = !isBuilder;
+        }
+        if(!("assignment" in creep.memory)) {
+            creep.memory.assignment = assignment++;
         }
         if(isWorking(creep)) {
             if(damaged.length && creep.memory.builder) {
@@ -211,7 +228,7 @@ module.exports.loop = function () {
                     creep.moveTo(cs);
                 }
             } else {
-                var c = my_controllers[i % my_controllers.length];
+                var c = my_controllers[creep.memory.assignment % my_controllers.length];
                 if(creep.upgradeController(c) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(c);
                 }
@@ -226,8 +243,9 @@ module.exports.loop = function () {
     
     //FIGHTER CODE
     
-    var fighterBaseBody = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK]; //450
-    var fighterBaseCost = 450;
+    var hasFighters = (groups.fighter ? groups.fighter.length : 0) >= rooms.length;
+    var fighterBaseBody = hasFighters ? [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK] : [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK]; //450
+    var fighterBaseCost = hasFighters ? 450 : 250;
     var fighterBody = [];
     var fighterCost = 0;
     
@@ -320,7 +338,6 @@ module.exports.loop = function () {
         }
     }
     
-    //console.log(toSpawn.length, Math.floor(dropped.reduce((total, dropped) => (dropped.energy || 0) + total, 0) / 150));
     console.log(Object.keys(groups).sort().map(key => [key, groups[key].length]));
 };
 
@@ -345,7 +362,6 @@ function makeCreep(toSpawn, id, type, body) {
     var plural = `${type}s`;
     if(!id || !Game.creeps[Memory[plural][id]]) {
         toSpawn.push(spawn => {
-            console.log(type);
             var result = spawn.createCreep(body, "creep_" + (new Date()).getTime(), {
                 type,
                 id,
