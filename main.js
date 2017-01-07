@@ -4,6 +4,8 @@ Memory.harvesters = Memory.harvesters || {};
 
 Memory.claimers = Memory.claimers || {};
 
+var isBuilder = false;
+
 var sortDropped = (a, b) => b.energy - a.energy;
 var sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal);
 var sortStores = (a, b) => {
@@ -152,7 +154,7 @@ module.exports.loop = function () {
         }
     });
     
-    var max_workers = sources.length;
+    var max_workers = sources.length * 2;
     
     //HARVESTERS CODE
     
@@ -194,13 +196,16 @@ module.exports.loop = function () {
     }
     
     groups.worker && groups.worker.forEach((creep, i) => {
+        if(!("builder" in creep.memory)) {
+            creep.memory.builder = isBuilder = !isBuilder;
+        }
         if(isWorking(creep)) {
-            if(damaged.length && i < groups.worker / 2) {
+            if(damaged.length && creep.memory.builder) {
                 var d = target(creep, damaged);
                 if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(d);
                 }
-            } else if(constructionSites.length && i < max_workers / 2) {
+            } else if(constructionSites.length && creep.memory.builder) {
                 var cs = constructionSites[0];
                 if(creep.build(cs) === ERR_NOT_IN_RANGE) {
                     creep.moveTo(cs);
