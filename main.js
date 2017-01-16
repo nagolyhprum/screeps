@@ -20,7 +20,7 @@ const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
 Memory.id = Memory.id || 1;
 
-Memory.sources = {};
+Memory.sources = Memory.sources || {};
 
 module.exports.loop = function () {
     
@@ -64,10 +64,10 @@ module.exports.loop = function () {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
             var cost = 250;
-            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * 3) {
+            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * 4) {
                 body = [...body, ...base];
             }
-            var result = spawn.createCreep(body, undefined, {
+            var result = spawn.createCreep(body.slice(0, 50), undefined, {
                 id : Memory.id,
                 type : "worker",
                 home : controller.id
@@ -81,10 +81,33 @@ module.exports.loop = function () {
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
             while((cost += 450) <= room.energyCapacityAvailable) {
-                body = [...body, ...base];
+                body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body, undefined, {
                 type : "fighter",
+                home : controller.id
+            });
+        }
+        const hasExpander = !!creeps.find(creep => creep.memory.type === "expander");
+        const unknown = myRooms.find(room => !Memory.sources[room]);
+        if(workers.length >= count && !hasExpander) {
+            if(unknown) {
+                spawn.createCreep([MOVE], undefined, { 
+                    type : "expander",
+                    home : controller.id
+                });
+            }
+        }
+        const claimers = creeps.filter(creep => creep.memory.type === "claimer");
+        if(workers.length >= count && claimers.length < myRooms.length - 1 && false) { //TODO
+            const body = [MOVE, CLAIM];
+            const cost = 650;
+            while((cost += 650) <= room.energyCapacityAvailable && coust <= 1950) {
+                body.push(MOVE);
+                body.push(CLAIM);
+            }
+            spawn.createCreep(body, undefined, {
+                type : "claimer",
                 home : controller.id
             });
         }
@@ -95,6 +118,16 @@ module.exports.loop = function () {
         const hostiles = [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
         creeps.forEach(creep => {
             switch(creep.memory.type) {
+                case "expander" :
+                    if(!creep.memory.goal || Memory.sources[creep.memory.goal]) {
+                        if(unknown) {
+                            creep.memory.goal = unknown;
+                        } else {
+                            creep.suicide();
+                        }
+                    }
+                    goToRoom(creep, creep.memory.goal);
+                    break;
                 case "worker" :
                     if(creep.carry.energy === creep.carryCapacity && creep.memory.isWorking) { 
                         creep.memory.isWorking = false;
@@ -116,7 +149,7 @@ module.exports.loop = function () {
                             source = mySources.find(source => source.id === creep.memory.source);
                         }
                         creep.memory.source = source.id;
-                        creep.say(Memory.sources[creep.room.name][creep.memory.source].list.length);
+                        //creep.say(Memory.sources[creep.room.name][creep.memory.source].list.length);
                         if(!goToRoom(creep, source.room)) {
                             source = Game.getObjectById(creep.memory.source);
                             if(creep.harvest(source) === ERR_NOT_IN_RANGE) {
