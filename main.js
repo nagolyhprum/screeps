@@ -141,13 +141,12 @@ module.exports.loop = function () {
                         var source;
                         if(!creep.memory.source) {
                             source = mySources.find(source => source.list.length < source.count);
-                            if(!source) {
-                                return;
-                            }
+                            if(!source) return;
                             source.list.push(creep.name);
                         } else {
                             source = mySources.find(source => source.id === creep.memory.source);
-                        }
+                            if(!source) return;
+                        } 
                         creep.memory.source = source.id;
                         //creep.say(Memory.sources[creep.room.name][creep.memory.source].list.length);
                         if(!goToRoom(creep, source.room)) {
@@ -268,8 +267,8 @@ function squareFrom(x, y, callback) {
                 return;
             }
         }
-        range++;
-    }
+        range++;  
+    } 
 }
 
 function initSources(rooms) {
@@ -279,8 +278,8 @@ function initSources(rooms) {
         if(!room[source.id]) { 
             var { x, y } = source.pos;
             const count = source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
-            room[source.id] = { count, list : [], room : room.name, id : source.id };
+            room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
-        room[source.id].list = room[source.id].list.filter(name => Game.creeps[name])
+        room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
     });
 }
