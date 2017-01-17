@@ -16,6 +16,8 @@ const filterTowers = {
     filter : structure => structure.structureType === STRUCTURE_TOWER
 };
 
+var danger = "";
+
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
 Memory.id = Memory.id || 1;
@@ -58,13 +60,13 @@ module.exports.loop = function () {
         }, []);
         
         const count = Math.round(mySources.reduce((sum, source) => source.count + sum, 0) * 1.25);
-        //console.log(count, myRooms);
+        console.log(workers.length, count);
         const cs = Object.keys(Game.constructionSites).map(mapCS).sort(sortCS);
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
             var cost = 250;
-            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * 4) {
+            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * 3) {
                 body = [...body, ...base];
             }
             var result = spawn.createCreep(body.slice(0, 50), undefined, {
@@ -115,7 +117,10 @@ module.exports.loop = function () {
             filter : structure => structure.hits < Math.min(structure.hitsMax, 1000)
         });
         const storage = room.find(FIND_STRUCTURES, filterStorage).reduce(reduceStorage, []);
-        const hostiles = [...room.find(FIND_HOSTILE_STRUCTURES), ...room.find(FIND_HOSTILE_CREEPS)];
+        const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
+        
+        danger = hostiles.length ? hostiles[0].room.name : danger;
+        
         creeps.forEach(creep => {
             switch(creep.memory.type) {
                 case "expander" :
@@ -187,7 +192,7 @@ module.exports.loop = function () {
                         if(creep.attack(hostile) === ERR_NOT_IN_RANGE | creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(hostile);
                         }
-                    } else {
+                    } else if(!goToRoom(creep, danger)) {
                         creep.moveTo(15, 40);
                     }
             }
