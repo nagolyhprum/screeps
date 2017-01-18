@@ -61,14 +61,16 @@ module.exports.loop = function () {
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
         }, []);
         
-        const count = Math.round(mySources.reduce((sum, source) => source.count + sum, 0) * 1.25);
-        console.log(workers.length, count);
+        const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
+        const count = Math.round(sourceCount * 4 / 3);
+        const workCount = Math.ceil(5 * mySources.length / sourceCount) + 1;
+        console.log(workers.length, count, workCount);
         const cs = Object.keys(Game.constructionSites).map(mapCS).sort(sortCS);
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
             var cost = 250;
-            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * 3) {
+            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * workCount) {
                 body = [...body, ...base];
             }
             var result = spawn.createCreep(body.slice(0, 50), undefined, {
