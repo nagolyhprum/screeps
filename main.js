@@ -59,7 +59,7 @@ module.exports.loop = function () {
         const myRooms = [...Object.keys(exits).map(key => exits[key]), room.name];
         
         var mySources = myRooms.reduce((mySources, room) => {
-            var sources = Memory.sources[room] || [];
+            var sources = room !== danger ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
         }, []);
         
@@ -125,7 +125,7 @@ module.exports.loop = function () {
         const storage = room.find(FIND_STRUCTURES, filterStorage).reduce(reduceStorage, []);
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
         
-        danger = hostiles.length ? hostiles[0].room.name : danger;
+        danger = Game.rooms[danger] ? (hostiles.length ? hostiles[0].room.name : "") : danger;
         
         myRooms.forEach(room => {
             const isClaimed = Game.creeps[Memory.reserves[room]];
