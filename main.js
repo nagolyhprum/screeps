@@ -176,7 +176,6 @@ module.exports.loop = function () {
                             if(!source) return;
                         } 
                         creep.memory.source = source.id;
-                        //creep.say(Memory.sources[creep.room.name][creep.memory.source].list.length);
                         if(!goToRoom(creep, source.room)) {
                             source = Game.getObjectById(creep.memory.source);
                             if(creep.harvest(source) === ERR_NOT_IN_RANGE) {
@@ -184,7 +183,7 @@ module.exports.loop = function () {
                             }
                         }
                     } else {
-                        switch(creep.memory.id % 2) {
+                        switch(storage.length ? creep.memory.id % 2 : 1) {
                             case 0 :
                                 var store = target(creep, storage);
                                 if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
@@ -192,12 +191,12 @@ module.exports.loop = function () {
                                 }
                                 break;
                             case 1 :
-                                if(creep.memory.id % 4 === 3 && damaged.length) {
+                                if(creep.memory.id % 4 !== 1 && damaged.length) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(d);
                                     }
-                                } else if(creep.memory.id % 4 === 3 && cs.length) {
+                                } else if(creep.memory.id % 4 !== 1 && cs.length) {
                                     var c = target(creep, cs);
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(c);
