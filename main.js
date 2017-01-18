@@ -20,7 +20,7 @@ var danger = "";
 
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
-Memory.id = Memory.id || 1;
+Memory.id = Memory.id || {};
 
 Memory.reserves = {};
 
@@ -76,12 +76,12 @@ module.exports.loop = function () {
                 body = [...body, ...base];
             }
             var result = spawn.createCreep(body.slice(0, 50), undefined, {
-                id : Memory.id,
+                id : Memory.id[controller.id] || 0,
                 type : "worker",
                 home : controller.id
             });
             if(_.isString(result)) {
-                Memory.id++;
+                Memory.id[controller.id] = (Memory.id[controller.id] || 0) + 1;
             }
         }
         if(workers.length >= count && creeps.length < count * 1.5) {
