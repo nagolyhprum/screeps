@@ -22,6 +22,8 @@ const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
 Memory.id = Memory.id || 1;
 
+Memory.reserves = {};
+
 Memory.sources = Memory.sources || {};
 
 module.exports.loop = function () {
@@ -48,7 +50,7 @@ module.exports.loop = function () {
            filter : creep => creep.hits < creep.hitsMax
         });
         
-        const creeps = Object.keys(Game.creeps).map(mapCreeps).filter(creep => creep.memory.home === controller.id || !creep.memory.home); //TODO : REMOVE
+        const creeps = Object.keys(Game.creeps).map(mapCreeps).filter(creep => creep.memory.home === controller.id); //TODO : REMOVE
         const workers = creeps.filter(filterIsWorker);
         
         const exits = Game.map.describeExits(room.name);
@@ -100,16 +102,16 @@ module.exports.loop = function () {
                 });
             }
         }
-        const claimers = creeps.filter(creep => creep.memory.type === "claimer");
-        if(workers.length >= count && claimers.length < myRooms.length - 1 && false) { //TODO
+        const reservers = creeps.filter(creep => creep.memory.type === "reserver");
+        if(workers.length >= count && reservers.length < myRooms.length - 1) { //TODO
             const body = [MOVE, CLAIM];
-            const cost = 650;
-            while((cost += 650) <= room.energyCapacityAvailable && coust <= 1950) {
+            var cost = 650;
+            while((cost += 650) <= room.energyCapacityAvailable && cost <= 1300) {
                 body.push(MOVE);
                 body.push(CLAIM);
             }
             spawn.createCreep(body, undefined, {
-                type : "claimer",
+                type : "reserver",
                 home : controller.id
             });
         }
@@ -121,8 +123,25 @@ module.exports.loop = function () {
         
         danger = hostiles.length ? hostiles[0].room.name : danger;
         
+        myRooms.forEach(room => {
+            const isClaimed = Game.creeps[Memory.reserves[room]];
+            const creep = reservers.find(creep => !creep.memory.target);
+            if(!isClaimed && creep) {
+                creep.memory.target = room;
+                Memory.reserves[room] = creep.name;
+            }
+        });
+        
         creeps.forEach(creep => {
             switch(creep.memory.type) {
+                case "reserver" :
+                    if(!goToRoom(creep, creep.memory.target)) {
+                        const controller = creep.room.controller;
+                        if(creep.reserveController(controller) == ERR_NOT_IN_RANGE) {
+                            creep.moveTo(controller);
+                        }
+                    }
+                    break;
                 case "expander" :
                     if(!creep.memory.goal || Memory.sources[creep.memory.goal]) {
                         if(unknown) {
