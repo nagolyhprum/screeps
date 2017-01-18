@@ -40,11 +40,13 @@ module.exports.loop = function () {
 
     initSources(rooms);
     
+    const DEFAULT_SPAWN = Game.spawns[Object.keys(Game.spawns)[0]];
+    
     controllers.forEach(controller => {
         const { room } = controller;
         const spawn = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
-        })[0] || Game.spawns[Object.keys(Game.spawns)[0]];
+        })[0] || DEFAULT_SPAWN;
     
         const hurt = room.find(FIND_MY_CREEPS, {
            filter : creep => creep.hits < creep.hitsMax
@@ -227,6 +229,34 @@ module.exports.loop = function () {
         });
         addSites(room);
     });
+    
+    const claimer = Object.keys(Game.creeps).map(key => Game.creeps[key]).find(creep => creep.memory.type === "claimer");
+    if(!claimer && Object.keys(Game.flags).length) {
+        DEFAULT_SPAWN.createCreep([TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, CLAIM], undefined, { //830
+            type : "claimer"
+        });
+    }
+    if(claimer) {
+        if(!claimer.memory.target) {
+            claimer.memory.target = Object.keys(Game.flags)[0];
+        }
+        if(!claimer.memory.target) {
+            claimer.suicide();
+        } else {
+            const flag = Game.flags[claimer.memory.target];
+            if(!goToRoom(claimer, flag.pos.roomName)) {
+                const controller = claimer.room.controller;
+                switch(claimer.claimController(controller)) {
+                    case ERR_NOT_IN_RANGE :
+                        claimer.moveTo(controller);
+                        break;
+                    case OK :
+                        flag.remove();
+                        claimer.memory.target = "";
+                }
+            }   
+        }
+    }
 };
 
 function addSite(room, site) {
