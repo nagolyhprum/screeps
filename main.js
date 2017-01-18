@@ -84,7 +84,7 @@ module.exports.loop = function () {
                 Memory.id++;
             }
         }
-        if(workers.length >= count) {
+        if(workers.length >= count && creeps.length < count * 1.5) {
             var base = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
@@ -231,7 +231,7 @@ module.exports.loop = function () {
     
     const claimer = Object.keys(Game.creeps).map(key => Game.creeps[key]).find(creep => creep.memory.type === "claimer");
     if(!claimer && Object.keys(Game.flags).length) {
-        DEFAULT_SPAWN.createCreep([TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, CLAIM], undefined, { //830
+        DEFAULT_SPAWN.createCreep([MOVE, CLAIM], undefined, { //650
             type : "claimer"
         });
     }
