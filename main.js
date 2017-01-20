@@ -159,7 +159,9 @@ module.exports.loop = function () {
                     if(!goToRoom(creep, creep.memory.target)) {
                         const controller = creep.room.controller;
                         if(creep.reserveController(controller) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(controller);
+                            moveTo(creep, controller, {
+                                maxRooms : 1
+                            });
                         }
                     }
                     break;
@@ -207,22 +209,22 @@ module.exports.loop = function () {
                             case 0 :
                                 var store = target(creep, storage);
                                 if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(store);
+                                    moveTo(creep, store);
                                 }
                                 break;
                             case 1 :
                                 if(creep.memory.id % 4 !== 1 && damaged.length) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
-                                        creep.moveTo(d);
+                                        moveTo(creep, d);
                                     }
                                 } else if(creep.memory.id % 4 !== 1 && cs.length) {
                                     var c = target(creep, cs.slice(0));
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
-                                        creep.moveTo(c);
+                                        moveTo(creep, c);
                                     }
                                 } else if(creep.upgradeController(controller) === ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(controller);
+                                    moveTo(creep, controller);
                                 }
                                 break;
                         }   
@@ -234,7 +236,9 @@ module.exports.loop = function () {
                             const hostile = creep.pos.findClosestByPath(hostiles);
                             if(creep.attack(hostile) + creep.rangedAttack(hostile)) {
                                 creep.heal(creep);
-                                creep.moveTo(hostile);
+                                moveTo(creep, hostile, {
+                                    maxRooms : 1
+                                });
                             }
                         }
                     } else {
@@ -271,7 +275,7 @@ module.exports.loop = function () {
                 const controller = claimer.room.controller;
                 switch(claimer.claimController(controller)) {
                     case ERR_NOT_IN_RANGE :
-                        claimer.moveTo(controller);
+                        moveTo(claimer, controller);
                         break;
                     case OK :
                         flag.remove();
