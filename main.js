@@ -227,15 +227,16 @@ module.exports.loop = function () {
                     }
                     break;
                 case "fighter" :
-                    creep.heal(creep);
                     if(Memory.danger[controller.id]) {
                         if(!goToRoom(creep, Memory.danger[controller.id])) {
                             const hostile = creep.pos.findClosestByPath(hostiles);
                             if(creep.attack(hostile) + creep.rangedAttack(hostile)) {
+                                creep.heal(creep);
                                 creep.moveTo(hostile);
                             }
                         }
                     } else {
+                        creep.heal(creep);
                         creep.moveTo(7, 40);
                     }
             }
