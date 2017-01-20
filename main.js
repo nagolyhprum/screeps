@@ -98,7 +98,7 @@ module.exports.loop = function () {
             while((cost += 450) <= room.energyCapacityAvailable) {
                 body = [...body.slice(0, 50), ...base];
             }
-            spawn.createCreep(body, undefined, {
+            spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]), undefined, {
                 type : "fighter",
                 home : controller.id
             });
@@ -210,7 +210,7 @@ module.exports.loop = function () {
                                 break;
                             case 1 :
                                 if(creep.memory.id % 4 !== 1 && damaged.length) {
-                                    var d = target(creep, damaged.slice(0));
+                                    var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(d);
                                     }
@@ -301,7 +301,11 @@ function addSite(room, site) {
 }
 
 function target(creep, targets) {
-    var target = targets.find(target => target.id === creep.memory.target) || targets.shift();
+    var target = targets.find(target => target.id === creep.memory.target) || targets[0];
+    const io = targets.indexOf(target);
+    if(io >= 0) {
+        targets.splice(io, 1);
+    }
     target && (creep.memory.target = target.id);
     return target;
 }
