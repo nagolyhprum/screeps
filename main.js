@@ -210,12 +210,12 @@ module.exports.loop = function () {
                                 break;
                             case 1 :
                                 if(creep.memory.id % 4 !== 1 && damaged.length) {
-                                    var d = target(creep, damaged);
+                                    var d = target(creep, damaged.slice(0));
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(d);
                                     }
                                 } else if(creep.memory.id % 4 !== 1 && cs.length) {
-                                    var c = target(creep, cs);
+                                    var c = target(creep, cs.slice(0));
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(c);
                                     }
