@@ -4,8 +4,6 @@ const filterIsWorker = creep => creep.memory.type === "worker";
 
 const sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal)
 
-const mapCS = key => Game.constructionSites[key];
-
 const reduceStorage = (storage, structure) => structure.structureType === STRUCTURE_TOWER ? [structure, ...storage] : [...storage, structure]
 
 const filterStorage = {
@@ -16,8 +14,6 @@ const filterTowers = {
     filter : structure => structure.structureType === STRUCTURE_TOWER
 };
 
-var danger = "";
-
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
 Memory.id = Memory.id || {};
@@ -25,6 +21,12 @@ Memory.id = Memory.id || {};
 Memory.reserves = {};
 
 Memory.sources = Memory.sources || {};
+
+Memory.danger = Memory.danger || {};
+
+const getClosestSpawn = roomName => Object.keys(Game.spawns).map(key => Game.spawns[key]).sort((a, b) => 
+    Game.map.getRoomLinearDistance(roomName, a.room.name) - Game.map.getRoomLinearDistance(roomName, b.room.name)
+)[0];
 
 module.exports.loop = function () {
     
@@ -40,13 +42,11 @@ module.exports.loop = function () {
 
     initSources(rooms);
     
-    const DEFAULT_SPAWN = Game.spawns[Object.keys(Game.spawns)[0]];
-    
     controllers.forEach(controller => {
         const { room } = controller;
         const spawn = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
-        })[0] || DEFAULT_SPAWN;
+        })[0] || getClosestSpawn(room.name);
     
         const hurt = room.find(FIND_MY_CREEPS, {
            filter : creep => creep.hits < creep.hitsMax
@@ -59,7 +59,7 @@ module.exports.loop = function () {
         const myRooms = [...Object.keys(exits).map(key => exits[key]), room.name];
         
         var mySources = myRooms.reduce((mySources, room) => {
-            var sources = room !== danger ?  Memory.sources[room] || [] : [];
+            var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
         }, []).sort((a, b) => {
             if(a.room === room.name) {
@@ -69,13 +69,12 @@ module.exports.loop = function () {
             }
             return 0;
         }); //try to keep people in this room
-        console.log(mySources[0].room);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const count = Math.round(sourceCount * 4 / 3);
         const workCount = Math.ceil(5 * mySources.length / sourceCount) + 1;
         console.log(workers.length, count, workCount);
-        const cs = Object.keys(Game.constructionSites).map(mapCS).sort(sortCS);
+        const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
@@ -132,8 +131,16 @@ module.exports.loop = function () {
         });
         const storage = room.find(FIND_STRUCTURES, filterStorage).reduce(reduceStorage, []);
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
-        
-        danger = Game.rooms[danger] ? (hostiles.length ? hostiles[0].room.name : "") : danger;
+         
+        if(Memory.danger[controller.id]) { //if a room is in danger
+            if(Game.rooms[Memory.danger[controller.id]]) { //and i am in that room
+                if(!hostiles.reduce((isHere, hostile) => isHere || hostile.room.name === Memory.danger[controller.id], false)) { //and there are no more hostiles in that room
+                    Memory.danger[controller.id] = "";
+                }
+            }
+        } else if(hostiles.length) {
+            Memory.danger[controller.id] = hostiles[0].room.name;
+        }
         
         myRooms.forEach(room => {
             const isClaimed = Game.creeps[Memory.reserves[room]];
@@ -168,6 +175,7 @@ module.exports.loop = function () {
                     if(creep.carry.energy === creep.carryCapacity && creep.memory.isWorking) { 
                         creep.memory.isWorking = false;
                         var source = mySources.find(source => source.id === creep.memory.source);
+                        if(!source) return;
                         source.list = source.list.filter(name => name !== creep.name);
                         creep.memory.source = "";
                     } else if(creep.carry.energy === 0 && !creep.memory.isWorking) {
@@ -187,7 +195,9 @@ module.exports.loop = function () {
                         if(!goToRoom(creep, source.room)) {
                             source = Game.getObjectById(creep.memory.source);
                             if(creep.harvest(source) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(source);
+                                moveTo(creep, source, {
+                                    maxRooms : 1
+                                });
                             }
                         }
                     } else {
@@ -199,12 +209,12 @@ module.exports.loop = function () {
                                 }
                                 break;
                             case 1 :
-                                if(creep.memory.id % 4 === 1 && damaged.length) {
+                                if(creep.memory.id % 4 !== 1 && damaged.length) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(d);
                                     }
-                                } else if(creep.memory.id % 4 === 1 && cs.length) {
+                                } else if(creep.memory.id % 4 !== 1 && cs.length) {
                                     var c = target(creep, cs);
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(c);
@@ -217,12 +227,14 @@ module.exports.loop = function () {
                     }
                     break;
                 case "fighter" :
-                    if(hostiles.length) {
-                        const hostile = creep.pos.findClosestByPath(hostiles);
-                        if(creep.attack(hostile) === ERR_NOT_IN_RANGE | creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
-                            creep.moveTo(hostile);
+                    if(Memory.danger[controller.id]) {
+                        if(!goToRoom(creep, Memory.danger[controller.id])) {
+                            const hostile = creep.pos.findClosestByPath(hostiles);
+                            if(creep.attack(hostile) === ERR_NOT_IN_RANGE | creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(hostile);
+                            }
                         }
-                    } else if(!goToRoom(creep, danger)) {
+                    } else {
                         creep.moveTo(7, 40);
                     }
             }
@@ -239,7 +251,7 @@ module.exports.loop = function () {
     
     const claimer = Object.keys(Game.creeps).map(key => Game.creeps[key]).find(creep => creep.memory.type === "claimer");
     if(!claimer && Object.keys(Game.flags).length) {
-        DEFAULT_SPAWN.createCreep([MOVE, CLAIM], undefined, { //650
+        getClosestSpawn(Game.flags[Object.keys(Game.flags)[0]].pos.roomName).createCreep([MOVE, CLAIM], undefined, { //650
             type : "claimer"
         });
     }
