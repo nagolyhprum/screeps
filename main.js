@@ -52,7 +52,7 @@ module.exports.loop = function () {
            filter : creep => creep.hits < creep.hitsMax
         });
         
-        const creeps = Object.keys(Game.creeps).map(mapCreeps).filter(creep => creep.memory.home === controller.id); //TODO : REMOVE
+        const creeps = Object.keys(Game.creeps).map(mapCreeps).filter(creep => creep.memory.home === controller.id).sort((a, b) => a.memory.id - b.memory.id);
         const workers = creeps.filter(filterIsWorker);
         
         const exits = Game.map.describeExits(room.name);
@@ -98,7 +98,7 @@ module.exports.loop = function () {
             while((cost += 450) <= room.energyCapacityAvailable) {
                 body = [...body.slice(0, 50), ...base];
             }
-            spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]), undefined, {
+            spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
                 type : "fighter",
                 home : controller.id
             });
