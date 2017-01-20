@@ -82,7 +82,7 @@ module.exports.loop = function () {
             while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * workCount) {
                 body = [...body, ...base];
             }
-            var result = spawn.createCreep(body.slice(0, 50), undefined, {
+            var result = spawn.createCreep(body, undefined, {
                 id : Memory.id[controller.id] || 0,
                 type : "worker",
                 home : controller.id
@@ -92,7 +92,7 @@ module.exports.loop = function () {
             }
         }
         if(workers.length >= count && creeps.length < count * 1.5) {
-            var base = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK, HEAL];
+            var base = [TOUGH, MOVE, TOUGH, MOVE, ATTACK, MOVE, RANGED_ATTACK, MOVE, HEAL, MOVE];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
             while((cost += 750) <= room.energyCapacityAvailable) {
