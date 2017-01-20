@@ -61,14 +61,7 @@ module.exports.loop = function () {
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
-        }, []).sort((a, b) => {
-            if(a.room === room.name) {
-                return -1;
-            }  else if(b.room === room.name) {
-                return 1;
-            }
-            return 0;
-        }); //try to keep people in this room
+        }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const count = Math.round(sourceCount * 4 / 3);
