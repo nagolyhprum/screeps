@@ -126,9 +126,9 @@ module.exports.loop = function () {
                 home : controller.id
             });
         }
-        const damaged = room.find(FIND_STRUCTURES, {
-            filter : structure => structure.hits < Math.min(structure.hitsMax, 1000)
-        });
+        const damaged = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, {
+            filter : structure => structure.hits < structure.hitsMax
+        })], []);
         const storage = room.find(FIND_STRUCTURES, filterStorage).reduce(reduceStorage, []);
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
          
