@@ -92,10 +92,10 @@ module.exports.loop = function () {
             }
         }
         if(workers.length >= count && creeps.length < count * 1.5) {
-            var base = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK];
+            var base = [TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, ATTACK, RANGED_ATTACK, HEAL];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
-            while((cost += 450) <= room.energyCapacityAvailable) {
+            while((cost += 750) <= room.energyCapacityAvailable) {
                 body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
@@ -227,6 +227,7 @@ module.exports.loop = function () {
                     }
                     break;
                 case "fighter" :
+                    creep.heal(creep);
                     if(Memory.danger[controller.id]) {
                         if(!goToRoom(creep, Memory.danger[controller.id])) {
                             const hostile = creep.pos.findClosestByPath(hostiles);
