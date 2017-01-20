@@ -230,7 +230,7 @@ module.exports.loop = function () {
                     if(Memory.danger[controller.id]) {
                         if(!goToRoom(creep, Memory.danger[controller.id])) {
                             const hostile = creep.pos.findClosestByPath(hostiles);
-                            if(creep.attack(hostile) === ERR_NOT_IN_RANGE | creep.rangedAttack(hostile) === ERR_NOT_IN_RANGE) {
+                            if(creep.attack(hostile) + creep.rangedAttack(hostile)) {
                                 creep.moveTo(hostile);
                             }
                         }
