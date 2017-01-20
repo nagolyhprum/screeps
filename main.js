@@ -188,7 +188,11 @@ module.exports.loop = function () {
                     if(creep.memory.isWorking) {
                         var source;
                         if(!creep.memory.source) {
-                            source = mySources.find(source => source.list.length < source.count);
+                            
+                            const index = creep.memory.id % mySources.length;
+                            const reordered = mySources.slice(index).concat(mySources.slice(0, index));
+                            
+                            source = reordered.find(source => source.list.length < source.count);
                             if(!source) return;
                             source.list.push(creep.name);
                         } else {
