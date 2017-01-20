@@ -91,11 +91,13 @@ module.exports.loop = function () {
                 Memory.id[controller.id] = (Memory.id[controller.id] || 0) + 1;
             }
         }
-        if(workers.length >= count && creeps.length < count * 1.5) {
+        const fighterCount = count * 0.5;
+        const fighters = creeps.filter(creep => creep.memory.type == "fighter");
+        if(workers.length >= count && creeps.length < count + fighterCount) {
             var base = [TOUGH, MOVE, TOUGH, MOVE, ATTACK, MOVE, RANGED_ATTACK, MOVE, HEAL, MOVE];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
-            while((cost += 750) <= room.energyCapacityAvailable) {
+            while((cost += 750) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
