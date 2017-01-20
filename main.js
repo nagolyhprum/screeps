@@ -61,7 +61,15 @@ module.exports.loop = function () {
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== danger ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
-        }, []);
+        }, []).sort((a, b) => {
+            if(a.room === room.name) {
+                return -1;
+            }  else if(b.room === room.name) {
+                return 1;
+            }
+            return 0;
+        }); //try to keep people in this room
+        console.log(mySources[0].room);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const count = Math.round(sourceCount * 4 / 3);
@@ -191,12 +199,12 @@ module.exports.loop = function () {
                                 }
                                 break;
                             case 1 :
-                                if(creep.memory.id % 4 !== 1 && damaged.length) {
+                                if(creep.memory.id % 4 === 1 && damaged.length) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(d);
                                     }
-                                } else if(creep.memory.id % 4 !== 1 && cs.length) {
+                                } else if(creep.memory.id % 4 === 1 && cs.length) {
                                     var c = target(creep, cs);
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         creep.moveTo(c);
@@ -215,7 +223,7 @@ module.exports.loop = function () {
                             creep.moveTo(hostile);
                         }
                     } else if(!goToRoom(creep, danger)) {
-                        creep.moveTo(15, 40);
+                        creep.moveTo(7, 40);
                     }
             }
         });
