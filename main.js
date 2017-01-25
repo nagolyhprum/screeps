@@ -199,12 +199,12 @@ module.exports.loop = function () {
                     } else {
                         switch(storage.length ? creep.memory.id % 4 : 0) {
                             case 0 :
-                                if(damaged.length) {
+                                if(damaged.length && controller.ticksToDowngrade >= 1000) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, d);
                                     }
-                                } else if(cs.length) {
+                                } else if(cs.length && controller.ticksToDowngrade >= 1000) {
                                     var c = target(creep, cs.slice(0));
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, c);
