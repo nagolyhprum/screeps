@@ -1,4 +1,4 @@
-const mapCreeps = key => Game.creeps[key];
+const mapCreeps = key => Game.creeps[key]; 
 
 const filterIsWorker = creep => creep.memory.type === "worker";
 
@@ -133,7 +133,7 @@ module.exports.loop = function () {
         
         myRooms.forEach(room => {
             const isClaimed = Game.creeps[Memory.reserves[room]];
-            const canClaim = Game.rooms[room] && Game.rooms[room].controller && !Game.rooms[room].controller.my;
+            const canClaim = !Game.rooms[room] || (Game.rooms[room].controller && !Game.rooms[room].controller.my);
             const creep = reservers.find(creep => !creep.memory.target);
             if(!isClaimed && creep && canClaim) {
                 creep.memory.target = room;
