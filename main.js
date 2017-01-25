@@ -63,7 +63,7 @@ module.exports.loop = function () {
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = Math.round(sourceCount * 2);
+        const count = Math.round(sourceCount * 4 / 3);
         const workCount = 3 * (spawns.length || 1); //count spawns
         console.log(workers.length, count, workCount);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
@@ -197,7 +197,7 @@ module.exports.loop = function () {
                             }
                         }
                     } else {
-                        switch(storage.length ? creep.memory.id % 4 : 0) {
+                        switch(storage.length ? creep.memory.id % 3 : 0) {
                             case 0 :
                                 if(damaged.length && controller.ticksToDowngrade >= 1000) {
                                     var d = target(creep, damaged);
