@@ -197,7 +197,7 @@ module.exports.loop = function () {
                             }
                         }
                     } else {
-                        switch(storage.length ? creep.memory.id % 3 : 0) {
+                        switch(storage.length ? creep.memory.id % 4 : 0) {
                             case 0 :
                                 if(damaged.length && controller.ticksToDowngrade >= 1000) {
                                     var d = target(creep, damaged);
