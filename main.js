@@ -4,8 +4,6 @@ const filterIsWorker = creep => creep.memory.type === "worker";
 
 const sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal)
 
-const reduceStorage = (storage, structure) => structure.structureType === STRUCTURE_TOWER ? [structure, ...storage] : [...storage, structure]
-
 const filterStorage = {
     filter : structure => [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(structure.structureType) && structure.energy < structure.energyCapacity
 };
@@ -44,9 +42,10 @@ module.exports.loop = function () {
     
     controllers.forEach(controller => {
         const { room } = controller;
-        const spawn = room.find(FIND_STRUCTURES, {
+        const spawns = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
-        })[0] || getClosestSpawn(room.name);
+        });
+        const spawn = spawns[0] || getClosestSpawn(room.name);
     
         const hurt = room.find(FIND_MY_CREEPS, {
            filter : creep => creep.hits < creep.hitsMax
@@ -57,15 +56,15 @@ module.exports.loop = function () {
         
         const exits = Game.map.describeExits(room.name);
         const myRooms = [...Object.keys(exits).map(key => exits[key]), room.name];
-        
+         
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = Math.round(sourceCount * 4 / 3);
-        const workCount = Math.ceil(5 * mySources.length / sourceCount) + 1;
+        const count = Math.round(sourceCount * 2);
+        const workCount = 3 * (spawns.length || 1); //count spawns
         console.log(workers.length, count, workCount);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
         if(workers.length < count) {
@@ -84,9 +83,9 @@ module.exports.loop = function () {
                 Memory.id[controller.id] = (Memory.id[controller.id] || 0) + 1;
             }
         }
-        const fighterCount = count * 0.5;
+        const fighterCount = myRooms.length;
         const fighters = creeps.filter(creep => creep.memory.type == "fighter");
-        if(workers.length >= count && creeps.length < count + fighterCount) {
+        if(workers.length >= count && fighters.length < fighterCount) {
             var base = [TOUGH, MOVE, TOUGH, MOVE, ATTACK, MOVE, RANGED_ATTACK, MOVE, HEAL, MOVE];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
@@ -110,12 +109,7 @@ module.exports.loop = function () {
         }
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
         if(workers.length >= count && reservers.length < myRooms.length - 1) { //TODO
-            const body = [MOVE, CLAIM];
-            var cost = 650;
-            while((cost += 650) <= room.energyCapacityAvailable && cost <= 1300) {
-                body.push(MOVE);
-                body.push(CLAIM);
-            }
+            const body = [MOVE, MOVE, CLAIM, CLAIM];
             spawn.createCreep(body, undefined, {
                 type : "reserver",
                 home : controller.id
@@ -124,7 +118,7 @@ module.exports.loop = function () {
         const damaged = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, {
             filter : structure => structure.hits < structure.hitsMax
         })], []);
-        const storage = room.find(FIND_STRUCTURES, filterStorage).reduce(reduceStorage, []);
+        const storage = room.find(FIND_STRUCTURES, filterStorage).sort((a, b) => b.energyCapacity - a.energyCapacity);
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
          
         if(Memory.danger[controller.id]) { //if a room is in danger
@@ -139,8 +133,9 @@ module.exports.loop = function () {
         
         myRooms.forEach(room => {
             const isClaimed = Game.creeps[Memory.reserves[room]];
+            const canClaim = Game.rooms[room] && Game.rooms[room].controller && !Game.rooms[room].controller.my;
             const creep = reservers.find(creep => !creep.memory.target);
-            if(!isClaimed && creep) {
+            if(!isClaimed && creep && canClaim) {
                 creep.memory.target = room;
                 Memory.reserves[room] = creep.name;
             }
@@ -202,26 +197,26 @@ module.exports.loop = function () {
                             }
                         }
                     } else {
-                        switch(storage.length ? creep.memory.id % 2 : 1) {
+                        switch(storage.length ? creep.memory.id % 4 : 0) {
                             case 0 :
-                                var store = target(creep, storage);
-                                if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                                    moveTo(creep, store);
-                                }
-                                break;
-                            case 1 :
-                                if(creep.memory.id % 4 !== 1 && damaged.length) {
+                                if(damaged.length) {
                                     var d = target(creep, damaged);
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, d);
                                     }
-                                } else if(creep.memory.id % 4 !== 1 && cs.length) {
+                                } else if(cs.length) {
                                     var c = target(creep, cs.slice(0));
                                     if(creep.build(c) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, c);
                                     }
                                 } else if(creep.upgradeController(controller) === ERR_NOT_IN_RANGE) {
                                     moveTo(creep, controller);
+                                }
+                                break;
+                            default :
+                                var store = target(creep, storage);
+                                if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                                    moveTo(creep, store);
                                 }
                                 break;
                         }   
@@ -355,13 +350,13 @@ function squareFrom(x, y, callback) {
     } 
 }
 
-function initSources(rooms) {
+function initSources(rooms) { 
     const sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES)], []);
     sources.forEach(source => {
         var room = Memory.sources[source.room.name] = Memory.sources[source.room.name] || {};
         if(!room[source.id]) { 
             var { x, y } = source.pos;
-            const count = source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
+            const count = 1;//source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
             room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
         room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
