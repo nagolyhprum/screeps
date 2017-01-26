@@ -92,10 +92,10 @@ module.exports.loop = function () {
         const fighterCount = myRooms.length;
         const fighters = creeps.filter(creep => creep.memory.type == "fighter");
         if(workers.length >= count && fighters.length < fighterCount) {
-            var base = [TOUGH, MOVE, TOUGH, MOVE, ATTACK, MOVE, RANGED_ATTACK, MOVE, HEAL, MOVE];
+            var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
-            if((cost += 750) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
+            if((cost += 500) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
