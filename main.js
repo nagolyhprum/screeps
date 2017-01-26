@@ -1,7 +1,7 @@
 const mapCreeps = key => Game.creeps[key]; 
 
 const filterIsWorker = creep => creep.memory.type === "worker";
-
+ 
 const sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal)
 
 const filterStorage = {
@@ -40,6 +40,12 @@ module.exports.loop = function () {
 
     initSources(rooms);
     
+    Object.keys(Memory.sources).forEach(room => {
+        Object.keys(Memory.sources[room]).forEach(source => {
+            Memory.sources[room][source].list = Memory.sources[room][source].list.filter(name => Game.creeps[name])
+        });
+    });
+    
     controllers.forEach(controller => {
         const { room } = controller;
         const spawns = room.find(FIND_STRUCTURES, {
@@ -63,8 +69,8 @@ module.exports.loop = function () {
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = Math.round(sourceCount * 4 / 3);
-        const workCount = 3 * (spawns.length || 1); //count spawns
+        const count = Math.round(sourceCount * 2);
+        const workCount = 3 * Math.max(spawns.length, 1); //count spawns
         console.log(workers.length, count, workCount);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
         if(workers.length < count) {
