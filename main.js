@@ -69,8 +69,8 @@ module.exports.loop = function () {
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = Math.round(sourceCount * 2);
-        const workCount = 3 * Math.max(spawns.length, 1); //count spawns
+        const count = sourceCount;
+        const workCount = 3;// * Math.max(spawns.length, 1); //count spawns
         console.log(workers.length, count, workCount);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
         if(workers.length < count) {
@@ -139,7 +139,7 @@ module.exports.loop = function () {
         
         myRooms.forEach(room => {
             const isClaimed = Game.creeps[Memory.reserves[room]];
-            const canClaim = !Game.rooms[room] || (Game.rooms[room].controller && !Game.rooms[room].controller.my);
+            const canClaim = !Game.rooms[room] || (Game.rooms[room].controller && !Game.rooms[room].controller.level);
             const creep = reservers.find(creep => !creep.memory.target);
             if(!isClaimed && creep && canClaim) {
                 creep.memory.target = room;
@@ -362,7 +362,7 @@ function initSources(rooms) {
         var room = Memory.sources[source.room.name] = Memory.sources[source.room.name] || {};
         if(!room[source.id]) { 
             var { x, y } = source.pos;
-            const count = 1;//source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
+            const count = source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
             room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
         room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
