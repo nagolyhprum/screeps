@@ -95,7 +95,7 @@ module.exports.loop = function () {
             var base = [TOUGH, MOVE, TOUGH, MOVE, ATTACK, MOVE, RANGED_ATTACK, MOVE, HEAL, MOVE];
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
             var cost = 250;
-            while((cost += 750) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
+            if((cost += 750) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
@@ -256,19 +256,19 @@ module.exports.loop = function () {
     });
     
     const claimer = Object.keys(Game.creeps).map(key => Game.creeps[key]).find(creep => creep.memory.type === "claimer");
-    if(!claimer && Object.keys(Game.flags).length) {
-        getClosestSpawn(Game.flags[Object.keys(Game.flags)[0]].pos.roomName).createCreep([MOVE, CLAIM], undefined, { //650
+    if(!claimer && Game.flags.claim) {
+        getClosestSpawn(Game.flags.claim.pos.roomName).createCreep([MOVE, CLAIM], undefined, { //650
             type : "claimer"
         });
     }
     if(claimer) {
         if(!claimer.memory.target) {
-            claimer.memory.target = Object.keys(Game.flags)[0];
+            claimer.memory.target = Game.flags.claim;
         }
         if(!claimer.memory.target) {
             claimer.suicide();
         } else {
-            const flag = Game.flags[claimer.memory.target];
+            const flag = Game.flags.claim;
             if(!goToRoom(claimer, flag.pos.roomName)) {
                 const controller = claimer.room.controller;
                 switch(claimer.claimController(controller)) {
