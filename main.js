@@ -72,7 +72,7 @@ module.exports.loop = function () {
             const roomName = myRooms[i];
             if(Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 4000))) {
                 const exits = Game.map.describeExits(roomName);
-                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName] && roomName !== Memory.danger[controller.id]));
+                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName]));
             }
         }
          
@@ -85,7 +85,7 @@ module.exports.loop = function () {
         const count = sourceCount;
         const workCount = 3;// * Math.max(spawns.length, 1); //count spawns
         console.log(workers.length, count, workCount, myRooms.length);
-        const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
+        const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
