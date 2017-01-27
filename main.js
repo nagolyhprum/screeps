@@ -39,9 +39,7 @@ module.exports.loop = function () {
     const rooms = Object.keys(Game.rooms).map(key => Game.rooms[key]);
     
     rooms.forEach(room => {
-        if(room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_KEEPER_LAIR}).length) {
-            Memory.lairs[room.name] = true;
-        }
+        Memory.lairs[room.name] = !room.controller;
     })
     
     const controllers = rooms.map(room => room.controller).filter(controller => controller && controller.my).sort((a, b) => a.room.energyCapacityAvailable - b.room.energyCapacityAvailable);
