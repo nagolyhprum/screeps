@@ -397,8 +397,9 @@ function initSources(rooms) {
     const sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES), ...(room.find(FIND_STRUCTURES, { 
         filter : s => s.structureType === STRUCTURE_EXTRACTOR
     }).length ? room.find(FIND_MINERALS) : [])], []);
+    rooms.forEach(room => Memory.sources[room.name] = Memory.sources[room.name] || {});
     sources.forEach(source => {
-        var room = Memory.sources[source.room.name] = Memory.sources[source.room.name] || {};
+        var room = Memory.sources[source.room.name];
         if(!room[source.id]) { 
             var { x, y } = source.pos;
             const count = source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
