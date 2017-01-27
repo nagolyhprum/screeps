@@ -5,7 +5,7 @@ const filterIsWorker = creep => creep.memory.type === "worker";
 const sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal)
 
 const filterStorage = {
-    filter : structure => [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(structure.structureType) && structure.energy < structure.energyCapacity
+    filter : structure => [STRUCTURE_LAB, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(structure.structureType) && structure.energy < structure.energyCapacity
 };
 
 const filterTowers = {
@@ -170,13 +170,13 @@ module.exports.loop = function () {
                     goToRoom(creep, creep.memory.goal);
                     break;
                 case "worker" :
-                    if(creep.carry.energy === creep.carryCapacity && creep.memory.isWorking) { 
+                    if(_.sum(creep.carry) === creep.carryCapacity && creep.memory.isWorking) { 
                         creep.memory.isWorking = false;
                         var source = mySources.find(source => source.id === creep.memory.source);
                         if(!source) return;
                         source.list = source.list.filter(name => name !== creep.name);
                         creep.memory.source = "";
-                    } else if(creep.carry.energy === 0 && !creep.memory.isWorking) {
+                    } else if(_.sum(creep.carry) === 0 && !creep.memory.isWorking) {
                         creep.memory.isWorking = true;
                     }
                     if(creep.memory.isWorking) {
@@ -203,6 +203,16 @@ module.exports.loop = function () {
                             }
                         }
                     } else {
+                        
+                        if(!creep.carry[RESOURCE_ENERGY]) {
+                            const lab = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount < s.mineralCapacity})[0];
+                            const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
+                            if(lab && creep.transfer(lab, resource) === ERR_NOT_IN_RANGE) {
+                                moveTo(creep, lab);
+                            }
+                            return;
+                        }
+                        
                         switch(storage.length ? creep.memory.id % 4 : 0) {
                             case 0 :
                                 if(damaged.length && controller.ticksToDowngrade >= 1000) {
@@ -321,6 +331,7 @@ function addSites(room) {
         addSite(room, STRUCTURE_SPAWN);
         addSite(room, STRUCTURE_TOWER);
         addSite(room, STRUCTURE_EXTENSION);
+        addSite(room, STRUCTURE_STORAGE);
     }
 }
 
@@ -340,11 +351,11 @@ function goToRoom(creep, room) {
 function moveTo(creep) {
     var args = Array.prototype.slice.call(arguments, 1);
     var path = creep.pos.findPathTo.apply(creep.pos, args);
-    creep.moveByPath(path);
+    creep.moveByPath(path); 
 }
 
 function squareFrom(x, y, callback) {
-    var range = 1;
+    var range = 1; 
     while(true) {
         var range2 = 2 * range;
         for(var i = 0; i < range2; i++) { //top left to right
@@ -357,12 +368,14 @@ function squareFrom(x, y, callback) {
 }
 
 function initSources(rooms) { 
-    const sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES)], []);
+    const sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES), ...(room.find(FIND_STRUCTURES, { 
+        filter : s => s.structureType === STRUCTURE_EXTRACTOR
+    }).length ? room.find(FIND_MINERALS) : [])], []);
     sources.forEach(source => {
         var room = Memory.sources[source.room.name] = Memory.sources[source.room.name] || {};
         if(!room[source.id]) { 
             var { x, y } = source.pos;
-            const count = source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
+            const count = source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
             room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
         room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
