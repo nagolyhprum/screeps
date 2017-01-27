@@ -188,7 +188,9 @@ module.exports.loop = function () {
                     if(_.sum(creep.carry) === creep.carryCapacity && creep.memory.isWorking) { 
                         creep.memory.isWorking = false;
                         var source = mySources.find(source => source.id === creep.memory.source);
-                        if(!source) return;
+                        if(!source) {
+                            break;
+                        }
                         source.list = source.list.filter(name => name !== creep.name);
                         creep.memory.source = "";
                     } else if(_.sum(creep.carry) === 0 && !creep.memory.isWorking) {
@@ -202,11 +204,16 @@ module.exports.loop = function () {
                             const reordered = mySources.slice(index).concat(mySources.slice(0, index));
                             
                             source = reordered.find(source => source.list.length < source.count);
-                            if(!source) return;
+                            if(!source) {
+                                break;
+                            }
                             source.list.push(creep.name);
                         } else {
                             source = mySources.find(source => source.id === creep.memory.source);
-                            if(!source) return;
+                            if(!source) {
+                                creep.memory.source = "";
+                                break;
+                            }
                         } 
                         creep.memory.source = source.id;
                         if(!goToRoom(creep, source.room)) {
@@ -225,7 +232,7 @@ module.exports.loop = function () {
                             if(lab && creep.transfer(lab, resource) === ERR_NOT_IN_RANGE) {
                                 moveTo(creep, lab);
                             }
-                            return;
+                            break;
                         }
                         
                         switch(storage.length ? creep.memory.id % 4 : 0) {
