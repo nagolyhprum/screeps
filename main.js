@@ -74,7 +74,7 @@ module.exports.loop = function () {
             const roomName = myRooms[i];
             if(Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 4000))) {
                 const exits = Game.map.describeExits(roomName);
-                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName]));
+                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName] && roomName !== Memory.danger[controller.id]));
             }
         }
          
