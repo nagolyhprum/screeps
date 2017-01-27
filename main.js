@@ -14,9 +14,11 @@ const filterTowers = {
 
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
+Memory.lairs = Memory.lairs || {};
+
 Memory.id = Memory.id || {};
 
-Memory.reserves = {};
+Memory.reserves = Memory.reserves || {};
 
 Memory.sources = Memory.sources || {};
 
@@ -35,6 +37,12 @@ module.exports.loop = function () {
     }
     
     const rooms = Object.keys(Game.rooms).map(key => Game.rooms[key]);
+    
+    rooms.forEach(room => {
+        if(room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_KEEPER_LAIR}).length) {
+            Memory.lairs[room.name] = true;
+        }
+    })
     
     const controllers = rooms.map(room => room.controller).filter(controller => controller && controller.my).sort((a, b) => a.room.energyCapacityAvailable - b.room.energyCapacityAvailable);
 
@@ -60,8 +68,15 @@ module.exports.loop = function () {
         const creeps = Object.keys(Game.creeps).map(mapCreeps).filter(creep => creep.memory.home === controller.id).sort((a, b) => a.memory.id - b.memory.id);
         const workers = creeps.filter(filterIsWorker);
         
-        const exits = Game.map.describeExits(room.name);
-        const myRooms = [...Object.keys(exits).map(key => exits[key]), room.name];
+        var myRooms = [room.name];
+        
+        for(var i = 0; i < myRooms.length; i++) {
+            const roomName = myRooms[i];
+            if(Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 4000))) {
+                const exits = Game.map.describeExits(roomName);
+                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName]));
+            }
+        }
          
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
@@ -71,7 +86,7 @@ module.exports.loop = function () {
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const count = sourceCount;
         const workCount = 3;// * Math.max(spawns.length, 1); //count spawns
-        console.log(workers.length, count, workCount);
+        console.log(workers.length, count, workCount, myRooms.length);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName)).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
@@ -124,8 +139,8 @@ module.exports.loop = function () {
         const damaged = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, {
             filter : structure => structure.hits < structure.hitsMax
         })], []);
-        const storage = room.find(FIND_STRUCTURES, filterStorage).sort((a, b) => b.energyCapacity - a.energyCapacity);
-        const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_STRUCTURES), ...hostiles, ...room.find(FIND_HOSTILE_CREEPS)], []);
+        const storage = room.find(FIND_STRUCTURES, filterStorage).sort((a, b) => b.energyCapacity - a.energyCapacity); 
+        const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_CREEPS), ...hostiles], []);
          
         if(Memory.danger[controller.id]) { //if a room is in danger
             if(Game.rooms[Memory.danger[controller.id]]) { //and i am in that room
@@ -205,7 +220,7 @@ module.exports.loop = function () {
                     } else {
                         
                         if(!creep.carry[RESOURCE_ENERGY]) {
-                            const lab = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount < s.mineralCapacity})[0];
+                            const lab = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0] || room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount < s.mineralCapacity})[0]; //todo remove
                             const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
                             if(lab && creep.transfer(lab, resource) === ERR_NOT_IN_RANGE) {
                                 moveTo(creep, lab);
@@ -292,6 +307,7 @@ module.exports.loop = function () {
             }   
         }
     }
+    console.log("---------------");
 };
 
 function addSite(room, site) {
@@ -349,9 +365,12 @@ function goToRoom(creep, room) {
 }
 
 function moveTo(creep) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    var path = creep.pos.findPathTo.apply(creep.pos, args);
-    creep.moveByPath(path); 
+    try {
+        var args = Array.prototype.slice.call(arguments, 1);
+        var path = creep.pos.findPathTo.apply(creep.pos, args);
+        creep.moveByPath(path); 
+    } catch(e) {
+    }
 }
 
 function squareFrom(x, y, callback) {
