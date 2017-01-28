@@ -56,7 +56,7 @@ module.exports.loop = function () {
         const { room } = controller;
         const spawns = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
-        });
+        }).sort((a, b) => a.spawning ? 1 : -1);
         const spawn = spawns[0] || getClosestSpawn(room.name);
     
         const hurt = room.find(FIND_MY_CREEPS, {
@@ -78,13 +78,13 @@ module.exports.loop = function () {
          
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
-            return [...mySources, ...Object.keys(sources).map(key => sources[key])];
+            return [...mySources, ...Object.keys(sources).filter(key => Game.getObjectById(key) && Game.getObjectById(key).energy).map(key => sources[key])];
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = sourceCount;
-        const workCount = 3;// * Math.max(spawns.length, 1); //count spawns
-        console.log(workers.length, count, workCount, myRooms.length);
+        const count = sourceCount / 4;
+        const workCount = 12;// * Math.max(spawns.length, 1); //count spawns
+        console.log(workers.length, count, workCount, myRooms.length, spawns.length);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
@@ -197,11 +197,7 @@ module.exports.loop = function () {
                     if(creep.memory.isWorking) {
                         var source;
                         if(!creep.memory.source) {
-                            
-                            const index = creep.memory.id % mySources.length;
-                            const reordered = mySources.slice(index).concat(mySources.slice(0, index));
-                            
-                            source = reordered.find(source => source.list.length < source.count);
+                            source = mySources.find(source => source.list.length < source.count);
                             if(!source) {
                                 break;
                             }
@@ -233,7 +229,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length ? creep.memory.id % 4 : 0) {
+                        switch(storage.length ? creep.memory.id % 2 : 0) {
                             case 0 :
                                 if(damaged.length && controller.ticksToDowngrade >= 1000) {
                                     var d = target(creep, damaged);
