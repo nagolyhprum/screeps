@@ -127,7 +127,7 @@ module.exports.loop = function () {
             }
         }
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
-        if(workers.length >= count && reservers.length < myRooms.length - 1) { //TODO
+        if(fighters.length >= fighterCount && reservers.length < myRooms.length - 1) { //TODO
             const body = [MOVE, MOVE, CLAIM, CLAIM];
             spawn.createCreep(body, Date().toString(), {
                 type : "reserver",
@@ -137,7 +137,7 @@ module.exports.loop = function () {
         const damaged = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, {
             filter : structure => structure.hits < structure.hitsMax
         })], []);
-        const storage = room.find(FIND_STRUCTURES, filterStorage).sort((a, b) => b.energyCapacity - a.energyCapacity); 
+        const storage = room.find(FIND_STRUCTURES, filterStorage); 
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_CREEPS), ...hostiles], []);
          
         if(Memory.danger[controller.id]) { //if a room is in danger
@@ -245,9 +245,15 @@ module.exports.loop = function () {
                                 }
                                 break;
                             default :
-                                var store = target(creep, storage);
-                                if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                                    moveTo(creep, store);
+                                if(!goToRoom(creep, room)) {
+                                    var store = creep.pos.findClosestByPath(storage);
+                                    var io = storage.indexOf(store);
+                                    if(io) {
+                                        storage.splice(io, 1);
+                                    }
+                                    if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                                        moveTo(creep, store);
+                                    }   
                                 }
                                 break;
                         }   
