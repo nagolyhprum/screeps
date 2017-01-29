@@ -84,7 +84,7 @@ module.exports.loop = function () {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             //.filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount)
             return [...mySources, ...Object.keys(sources).map(key => sources[key])];
-        }, []);
+        }, []).sort((a, b) => a.isMineral - b.isMineral);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const workCount = Math.min(12, Math.floor(room.energyCapacityAvailable / 250));
@@ -92,8 +92,8 @@ module.exports.loop = function () {
         
         const timetomake = workCount * count * 4 * 3 / Math.max(spawns.length, 1);
         
-        if(timetomake >= 1000) {
-            count = Math.ceil(count * 1000 / timetomake);
+        if(timetomake >= 750) {
+            count = Math.ceil(count * 750 / timetomake);
         }
         
         console.log(controller.room.name, sourceCount, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake);
@@ -232,7 +232,7 @@ module.exports.loop = function () {
                         creep.memory.source = source.id;
                         if(!goToRoom(creep, source.room)) {
                             source = Game.getObjectById(creep.memory.source);
-                            if(creep.harvest(source) === ERR_NOT_IN_RANGE) {
+                            if(creep.harvest(source)) {
                                 moveTo(creep, source, {
                                     maxRooms : 1
                                 });
@@ -272,7 +272,9 @@ module.exports.loop = function () {
                                     if(io) {
                                         storage.splice(io, 1);
                                     }
-                                    if(creep.transfer(store, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                                    if(creep.transfer(store, RESOURCE_ENERGY) === OK) {
+                                        creep.say(creep.room.energyAvailable);
+                                    } else {
                                         moveTo(creep, store);
                                     }   
                                 }
@@ -422,8 +424,8 @@ function initSources(rooms) {
         var room = Memory.sources[source.room.name];
         if(!room[source.id]) { 
             var { x, y } = source.pos;
-            const count = 1;//source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
-            room[source.id] = { count, list : [], room : source.room.name, id : source.id };
+            const count = 1;// ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
+            room[source.id] = { isMineral : source.mineralType ? 1 : 0, count, list : [], room : source.room.name, id : source.id };
         }
         room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
     });
