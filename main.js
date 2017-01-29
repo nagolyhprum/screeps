@@ -82,16 +82,17 @@ module.exports.loop = function () {
          
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
-            return [...mySources, ...Object.keys(sources).filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount).map(key => sources[key])];
+            //.filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount)
+            return [...mySources, ...Object.keys(sources).map(key => sources[key])];
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
         const workCount = Math.min(12, Math.floor(room.energyCapacityAvailable / 250));
-        var count = Math.ceil(sourceCount / workCount * 12);
+        var count = sourceCount;
         
         const timetomake = workCount * count * 4 * 3 / Math.max(spawns.length, 1);
         
-        if(timetomake > 1000) {
+        if(timetomake >= 1000) {
             count = Math.ceil(count * 1000 / timetomake);
         }
         
@@ -421,7 +422,7 @@ function initSources(rooms) {
         var room = Memory.sources[source.room.name];
         if(!room[source.id]) { 
             var { x, y } = source.pos;
-            const count = source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
+            const count = 1;//source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
             room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
         room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
