@@ -139,7 +139,7 @@ module.exports.loop = function () {
             }
         }
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
-        if(fighters.length >= fighterCount && reservers.length < myRooms.length - 1) { //TODO
+        if(workers.length >= count && fighters.length >= fighterCount && reservers.length < myRooms.length - 1) { //TODO
             const body = [MOVE, MOVE, CLAIM, CLAIM];
             spawn.createCreep(body, Date().toString(), {
                 type : "reserver",
