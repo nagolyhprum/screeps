@@ -91,7 +91,7 @@ module.exports.loop = function () {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             count += Object.keys(sources).length;
             return [...mySources, ...Object.keys(sources).filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount).map(key => sources[key])];
-        }, []).sort((a, b) => a.isMineral - b.isMineral);
+        }, []);
         const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - 200) / 350) + 1);
         
         const timetomake = count * (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
@@ -434,7 +434,7 @@ function initSources(rooms) {
         if(!room[source.id]) { 
             var { x, y } = source.pos;
             const count = source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
-            room[source.id] = { isMineral : source.mineralType ? 1 : 0, count, list : [], room : source.room.name, id : source.id };
+            room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
     });
 }
