@@ -67,16 +67,17 @@ module.exports.loop = function () {
         const workers = creeps.filter(filterIsWorker);
         
         var myRooms = [room.name];
+        const MAX_ROOMS = 5;
         
         for(var i = 0; i < myRooms.length; i++) {
             const roomName = myRooms[i];
-            if(Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 2500))) {
+            if(myRooms.length < MAX_ROOMS && Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 2500))) {
                 const exits = Game.map.describeExits(roomName);
                 myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName]));
             }
         }
          
-        myRooms = myRooms.slice(0, 5); 
+        myRooms = myRooms.slice(0, MAX_ROOMS); 
         
         const dropped = myRooms.reduce((dropped, roomName) => [...dropped, ...(Game.rooms[roomName] ? Game.rooms[roomName].find(FIND_DROPPED_RESOURCES) : [])], [])
          
