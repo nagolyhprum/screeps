@@ -86,9 +86,14 @@ module.exports.loop = function () {
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const workCount = Math.min(12, Math.floor(room.energyCapacityAvailable / 250));
-        const count = sourceCount / workCount * 12;
-        console.log("workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length);
+        const workCount = Math.min(Math.ceil(3.3 * Math.max(spawns.length, 1)), Math.floor(room.energyCapacityAvailable / 250));
+        var count = Math.ceil(sourceCount / workCount * 12);
+        
+        const timetomake = workCount * count * 4 * 3;
+        
+        count = count * 1250 / timetomake;
+        
+        console.log("workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
