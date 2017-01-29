@@ -76,6 +76,10 @@ module.exports.loop = function () {
             }
         }
          
+        myRooms = myRooms.slice(0, 5);
+        
+        const dropped = myRooms.reduce((dropped, roomName) => [...dropped, ...(Game.rooms[roomName] ? Game.rooms[roomName].find(FIND_DROPPED_RESOURCES) : [])], [])
+         
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).filter(key => Game.getObjectById(key) && (Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount)).map(key => sources[key])];
@@ -194,6 +198,15 @@ module.exports.loop = function () {
                         creep.memory.isWorking = true;
                     }
                     if(creep.memory.isWorking) {
+                        
+                        if(dropped.length) {
+                            const d = target(creep, dropped);
+                            if(creep.pickup(d) === ERR_NOT_IN_RANGE) {
+                                moveTo(creep, d);
+                                break;
+                            }
+                        }
+                        
                         var source;
                         if(!creep.memory.source) {
                             source = mySources.find(source => source.list.length < source.count);
