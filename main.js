@@ -48,7 +48,7 @@ module.exports.loop = function () {
     
     Object.keys(Memory.sources).forEach(room => {
         Object.keys(Memory.sources[room]).forEach(source => {
-            Memory.sources[room][source].list = Memory.sources[room][source].list.filter(name => Game.creeps[name])
+            Memory.sources[room][source].list = Memory.sources[room][source].list.filter(name => Game.creeps[name] && Game.creeps[name].memory.source === source)
         });
     });
     
@@ -78,22 +78,22 @@ module.exports.loop = function () {
          
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
-            return [...mySources, ...Object.keys(sources).filter(key => Game.getObjectById(key) && Game.getObjectById(key).energy).map(key => sources[key])];
+            return [...mySources, ...Object.keys(sources).filter(key => Game.getObjectById(key) && (Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount)).map(key => sources[key])];
         }, []);
         
         const sourceCount = mySources.reduce((sum, source) => source.count + sum, 0);
-        const count = sourceCount / 4;
-        const workCount = 12;// * Math.max(spawns.length, 1); //count spawns
-        console.log(workers.length, count, workCount, myRooms.length, spawns.length);
+        const workCount = Math.min(12, Math.floor(room.energyCapacityAvailable / 250));
+        const count = sourceCount / workCount * 12;
+        console.log("workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length);
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
         if(workers.length < count) {
             const base = [WORK, CARRY, MOVE, MOVE];
             var body = base;
             var cost = 250;
-            while((cost += 250) <= room.energyCapacityAvailable && workers.length >= count / 2 && cost <= 250 * workCount) {
+            while((cost += 250) <= workCount * 250 && workers.length >= count / 2) {
                 body = [...body, ...base];
             }
-            var result = spawn.createCreep(body, undefined, {
+            var result = spawn.createCreep(body, Date().toString(), {
                 id : Memory.id[controller.id] || 0,
                 type : "worker",
                 home : controller.id
@@ -111,7 +111,7 @@ module.exports.loop = function () {
             if((cost += 500) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
-            spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), undefined, {
+            spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), Date().toString(), {
                 type : "fighter",
                 home : controller.id
             });
@@ -120,7 +120,7 @@ module.exports.loop = function () {
         const unknown = myRooms.find(room => !Memory.sources[room]);
         if(workers.length >= count && !hasExpander) {
             if(unknown) {
-                spawn.createCreep([MOVE], undefined, { 
+                spawn.createCreep([MOVE], Date().toString(), { 
                     type : "expander",
                     home : controller.id
                 });
@@ -129,7 +129,7 @@ module.exports.loop = function () {
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
         if(workers.length >= count && reservers.length < myRooms.length - 1) { //TODO
             const body = [MOVE, MOVE, CLAIM, CLAIM];
-            spawn.createCreep(body, undefined, {
+            spawn.createCreep(body, Date().toString(), {
                 type : "reserver",
                 home : controller.id
             });
@@ -189,7 +189,6 @@ module.exports.loop = function () {
                         if(!source) {
                             break;
                         }
-                        source.list = source.list.filter(name => name !== creep.name);
                         creep.memory.source = "";
                     } else if(_.sum(creep.carry) === 0 && !creep.memory.isWorking) {
                         creep.memory.isWorking = true;
@@ -229,7 +228,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length ? creep.memory.id % 2 : 0) {
+                        switch(storage.length ? creep.memory.id % 4 : 0) {
                             case 0 :
                                 if(damaged.length && controller.ticksToDowngrade >= 1000) {
                                     var d = target(creep, damaged);
@@ -283,7 +282,7 @@ module.exports.loop = function () {
     
     const claimer = Object.keys(Game.creeps).map(key => Game.creeps[key]).find(creep => creep.memory.type === "claimer");
     if(!claimer && Game.flags.claim) {
-        getClosestSpawn(Game.flags.claim.pos.roomName).createCreep([MOVE, CLAIM], undefined, { //650
+        getClosestSpawn(Game.flags.claim.pos.roomName).createCreep([MOVE, CLAIM], Date().toString(), { //650
             type : "claimer"
         });
     }
@@ -385,7 +384,7 @@ function squareFrom(x, y, callback) {
         }
         range++;  
     } 
-}
+} 
 
 function initSources(rooms) { 
     const sources = rooms.reduce((sources, room) => [...sources, ...room.find(FIND_SOURCES), ...(room.find(FIND_STRUCTURES, { 
