@@ -257,7 +257,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length ? creep.memory.id % 4 : 0) {
+                        switch(storage.length ? creep.memory.id % 3 : 0) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 10000) {
                                     var c = target(creep, cs.slice(0));
