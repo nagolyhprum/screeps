@@ -92,7 +92,7 @@ module.exports.loop = function () {
         const timetomake = workCount * count * 4 * 3 / Math.max(spawns.length, 1);
         
         if(timetomake > 1000) {
-            count = count * 1000 / timetomake;
+            count = Math.ceil(count * 1000 / timetomake);
         }
         
         console.log(controller.room.name, sourceCount, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake);
