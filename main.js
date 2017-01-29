@@ -436,6 +436,5 @@ function initSources(rooms) {
             const count = source.mineralType ? 1 : source.room.lookForAtArea(LOOK_TERRAIN, y - 1, x - 1, y + 1, x + 1, true).filter(filterIsNotWall).length;
             room[source.id] = { isMineral : source.mineralType ? 1 : 0, count, list : [], room : source.room.name, id : source.id };
         }
-        room[source.id].list = room[source.id].list.filter(name => Game.creeps[name]);
     });
 }
