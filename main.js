@@ -157,7 +157,7 @@ module.exports.loop = function () {
         const damaged = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((damaged, room) => [...damaged, ...room.find(FIND_STRUCTURES, {
             filter : structure => structure.hits < structure.hitsMax
         })], []);
-        const storage = room.find(FIND_STRUCTURES, filterStorage); 
+        const storage = room.find(FIND_STRUCTURES, filterStorage).sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50)); 
         const hostiles = myRooms.map(key => Game.rooms[key]).filter(_ => _).reduce((hostiles, room) => [...room.find(FIND_HOSTILE_CREEPS), ...hostiles], []);
          
         if(Memory.danger[controller.id]) { //if a room is in danger
@@ -283,7 +283,7 @@ module.exports.loop = function () {
                                     if(io => 0) {
                                         storage.splice(io, 1);
                                     }
-                                    const canHandle = Math.floor(creep.carry.energy / store.energyCapacity) - 1;
+                                    const canHandle = Math.max(0, Math.floor(creep.carry.energy / store.energyCapacity) - 1);
                                     storage.splice(0, canHandle);
                                     if(creep.transfer(store, RESOURCE_ENERGY) === OK) {
                                         creep.say(creep.room.energyAvailable + " + " + creep.carry.energy);
