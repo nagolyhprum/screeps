@@ -14,6 +14,8 @@ const filterTowers = {
 
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
+Memory.exits = {};
+
 Memory.owned = Memory.owned || {};
 
 Memory.lairs = Memory.lairs || {};
@@ -42,6 +44,10 @@ module.exports.loop = function () {
     
     rooms.forEach(room => {
         Memory.lairs[room.name] = !room.controller;
+        if(!Memory.exits[room.name]) {
+            const exits = Game.map.describeExits(room.name);
+            Memory.exits[room.name] = Object.keys(exits).map(key => exits[key]);
+        }
     })
     
     const controllers = rooms.map(room => room.controller).filter(controller => controller && controller.my).sort((a, b) => a.room.energyCapacityAvailable - b.room.energyCapacityAvailable);
@@ -56,6 +62,9 @@ module.exports.loop = function () {
     
     controllers.forEach(controller => {
         const { room } = controller;
+        
+        const flags = room.find(FIND_FLAGS);
+        
         const spawns = room.find(FIND_STRUCTURES, {
             filter : structure => structure.structureType === STRUCTURE_SPAWN
         }).sort((a, b) => a.spawning ? 1 : -1);
@@ -73,9 +82,9 @@ module.exports.loop = function () {
         
         for(var i = 0; i < myRooms.length; i++) {
             const roomName = myRooms[i];
-            if(myRooms.length < MAX_ROOMS && Game.rooms[roomName] && Game.rooms[roomName].controller && (Game.rooms[roomName].controller.level || (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.ticksToEnd >= 2500))) {
+            if(myRooms.length < MAX_ROOMS && Memory.exits[roomName]) {
                 const exits = Game.map.describeExits(roomName);
-                myRooms = myRooms.concat(Object.keys(exits).map(key => exits[key]).filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName] && (!Memory.owned[roomName] || Memory.owned[roomName] === controller.id)));
+                myRooms = myRooms.concat(Memory.exits[roomName].filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName] && (!Memory.owned[roomName] || Memory.owned[roomName] === controller.id)));
             }
         }
          
@@ -96,8 +105,8 @@ module.exports.loop = function () {
         
         const timetomake = count * (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
-        if(timetomake >= 750) {
-            count = Math.ceil(count * 750 / timetomake);
+        if(timetomake >= 1000) {
+            count = Math.ceil(count * 1000 / timetomake);
         }
         
         console.log(controller.room.name, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake, myRooms.sort());
@@ -119,7 +128,7 @@ module.exports.loop = function () {
                 Memory.id[controller.id] = (Memory.id[controller.id] || 0) + 1;
             }
         }
-        const fighterCount = myRooms.length;
+        const fighterCount = 3//myRooms.length;
         const fighters = creeps.filter(creep => creep.memory.type == "fighter");
         if(workers.length >= count && fighters.length < fighterCount) {
             var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
@@ -144,7 +153,7 @@ module.exports.loop = function () {
             }
         }
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
-        if(workers.length >= count && fighters.length >= fighterCount && reservers.length < myRooms.length - 1) { //TODO
+        if(workers.length >= count && fighters.length >= fighterCount && reservers.length < myRooms.length - 1 && false) { //TODO
             const body = [MOVE, MOVE, CLAIM, CLAIM];
             spawn.createCreep(body, Date().toString(), {
                 type : "reserver",
@@ -277,7 +286,7 @@ module.exports.loop = function () {
                                 if(!goToRoom(creep, room)) {
                                     var store = creep.pos.findClosestByPath(storage);
                                     var io = storage.indexOf(store);
-                                    if(io) {
+                                    if(io => 0) {
                                         storage.splice(io, 1);
                                     }
                                     if(creep.transfer(store, RESOURCE_ENERGY) === OK) {
