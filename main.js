@@ -104,9 +104,7 @@ module.exports.loop = function () {
         
         const timetomake = count * (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
-        if(timetomake >= 1000) {
-            count = Math.ceil(count * 1000 / timetomake);
-        }
+        count = Math.ceil(count * 1000 / timetomake);
         
         console.log(controller.room.name, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake, myRooms.sort());
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
@@ -288,7 +286,7 @@ module.exports.loop = function () {
                                     if(io => 0) {
                                         storage.splice(io, 1);
                                     }
-                                    const canHandle = Math.floor(creep.carry.energy / store.energyCapacity);
+                                    const canHandle = Math.floor(creep.carry.energy / store.energyCapacity) - 1;
                                     storage.splice(0, canHandle);
                                     if(creep.transfer(store, RESOURCE_ENERGY) === OK) {
                                         creep.say(creep.room.energyAvailable + " + " + creep.carry.energy);
