@@ -14,7 +14,7 @@ const filterTowers = {
 
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
-Memory.exits = {};
+Memory.exits = Memory.exits || {};
 
 Memory.owned = Memory.owned || {};
 
@@ -83,7 +83,6 @@ module.exports.loop = function () {
         for(var i = 0; i < myRooms.length; i++) {
             const roomName = myRooms[i];
             if(myRooms.length < MAX_ROOMS && Memory.exits[roomName]) {
-                const exits = Game.map.describeExits(roomName);
                 myRooms = myRooms.concat(Memory.exits[roomName].filter(roomName => myRooms.indexOf(roomName) === -1 && !Memory.lairs[roomName] && (!Memory.owned[roomName] || Memory.owned[roomName] === controller.id)));
             }
         }
