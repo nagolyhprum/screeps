@@ -227,7 +227,7 @@ module.exports.loop = function () {
                         
                         var source;
                         if(!creep.memory.source) {
-                            source = mySources.find(source => source.list.length < source.count);
+                            source = mySources.sort((a, b) => a.list.length - b.list.length).find(source => source.list.length < source.count);
                             if(!source) {
                                 break;
                             }
@@ -260,7 +260,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length) {
+                        switch(storage.length ? creep.memory.id % 2 : 0) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 10000) {
                                     var c = target(creep, cs.slice(0));
