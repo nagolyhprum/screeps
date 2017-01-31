@@ -128,7 +128,7 @@ module.exports.loop = function () {
                 Memory.id[controller.id] = (Memory.id[controller.id] || 0) + 1;
             }
         }
-        const fighterCount = 3//myRooms.length;
+        const fighterCount = myRooms.length;
         const fighters = creeps.filter(creep => creep.memory.type == "fighter");
         if(workers.length >= count && fighters.length < fighterCount) {
             var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
@@ -222,7 +222,7 @@ module.exports.loop = function () {
                     if(creep.memory.isWorking) {
                         
                         if(dropped.length) {
-                            if(creep == dropped[0].pos.findClosestByPath(workers)) {
+                            if(creep == dropped[0].pos.findClosestByPath(workers.filter(creep => creep.memory.isWorking))) {
                                 creep.say("mine");
                                 if(creep.pickup(dropped[0]) === ERR_NOT_IN_RANGE) {
                                     moveTo(creep, dropped[0]);
@@ -258,10 +258,10 @@ module.exports.loop = function () {
                     } else {
                         
                         if(!creep.carry[RESOURCE_ENERGY]) {
-                            const lab = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0] || room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount < s.mineralCapacity})[0]; //todo remove
+                            const container = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
                             const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
-                            if(lab && creep.transfer(lab, resource) === ERR_NOT_IN_RANGE) {
-                                moveTo(creep, lab);
+                            if(container && creep.transfer(container, resource) === ERR_NOT_IN_RANGE) {
+                                moveTo(creep, container);
                             }
                             break;
                         }
@@ -289,9 +289,12 @@ module.exports.loop = function () {
                                     if(io => 0) {
                                         storage.splice(io, 1);
                                     }
+                                    const canHandle = Math.floor(creep.carry.energy / store.energyCapacity);
+                                    storage.splice(0, canHandle);
                                     if(creep.transfer(store, RESOURCE_ENERGY) === OK) {
                                         creep.say(creep.room.energyAvailable + " + " + creep.carry.energy);
                                     } else {
+                                        creep.say(canHandle);
                                         moveTo(creep, store);
                                     }   
                                 }
