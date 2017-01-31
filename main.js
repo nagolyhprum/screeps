@@ -104,7 +104,7 @@ module.exports.loop = function () {
         
         const timetomake = count * (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
-        count = Math.ceil(count * 1000 / timetomake);
+        count = Math.ceil(count * 750 / timetomake);
         
         console.log(controller.room.name, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake, myRooms.sort());
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
