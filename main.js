@@ -92,19 +92,16 @@ module.exports.loop = function () {
         myRooms.forEach(roomName => Memory.owned[roomName] = controller.id);
         
         const dropped = myRooms.reduce((dropped, roomName) => [...dropped, ...(Game.rooms[roomName] ? Game.rooms[roomName].find(FIND_DROPPED_RESOURCES) : [])], [])
-        
-        var count = 0;
          
         var mySources = myRooms.reduce((mySources, room) => {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
-            count += Object.keys(sources).length;
             return [...mySources, ...Object.keys(sources).filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount).map(key => sources[key])];
         }, []);
         const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - 200) / 350) + 1);
         
-        const timetomake = count * (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
+        const timetomake = (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
-        count = Math.ceil(count * 750 / timetomake);
+        const count = Math.ceil(750 / timetomake);
         
         console.log(controller.room.name, "workers have", workers.length, "workers need", count, "parts", workCount, "rooms", myRooms.length, "spawns", spawns.length, "time to make", timetomake, myRooms.sort());
         const cs = Object.keys(Game.constructionSites).map(key => Game.constructionSites[key]).filter(cs => myRooms.includes(cs.pos.roomName) && cs.pos.roomName !== Memory.danger[controller.id]).sort(sortCS); 
