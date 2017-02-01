@@ -99,7 +99,7 @@ module.exports.loop = function () {
         }, []);
         const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - 200) / 350) + 1);
         
-        const timetomake = (4 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
+        const timetomake = (3 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
         const count = Math.ceil(750 / timetomake);
         
