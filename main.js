@@ -138,13 +138,11 @@ module.exports.loop = function () {
         }
         const hasExpander = !!creeps.find(creep => creep.memory.type === "expander");
         const unknown = myRooms.find(room => !Memory.sources[room]);
-        if(workers.length >= count && !hasExpander) {
-            if(unknown) {
-                spawn.createCreep([MOVE], Date().toString(), { 
-                    type : "expander",
-                    home : controller.id
-                });
-            }
+        if(!hasExpander && unknown) {
+            spawn.createCreep([MOVE], Date().toString(), { 
+                type : "expander",
+                home : controller.id
+            });
         }
         const reservers = creeps.filter(creep => creep.memory.type === "reserver");
         if(workers.length >= count && fighters.length >= fighterCount && reservers.length < myRooms.length - 1 && false) { //TODO
