@@ -97,7 +97,8 @@ module.exports.loop = function () {
             var sources = room !== Memory.danger[controller.id] ?  Memory.sources[room] || [] : [];
             return [...mySources, ...Object.keys(sources).filter(key => !Game.getObjectById(key) || Game.getObjectById(key).energy || Game.getObjectById(key).mineralAmount).map(key => sources[key])];
         }, []);
-        const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - 200) / 350) + 1);
+        const extCost = BODYPART_COST[WORK] + BODYPART_COST[MOVE] * 2 + BODYPART_COST[CARRY] * 3;
+        const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - BODYPART_COST[WORK] + BODYPART_COST[MOVE] + BODYPART_COST[CARRY]) / extCost) + 1);
         
         const timetomake = (3 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
         
@@ -127,8 +128,9 @@ module.exports.loop = function () {
         if(workers.length >= count && fighters.length < fighterCount) {
             var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
-            var cost = 250;
-            if((cost += 500) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
+            var cost = base.reduce((cost, part) => BODYPART_COST[part] + total, 0);
+            var fighterExtCost = base.reduce((cost, part) => BODYPART_COST[part] + total, 0);
+            if((cost += fighterExtCost) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
             spawn.createCreep(body.sort((a, b) => BODYPART_COST[a] - BODYPART_COST[b]).slice(0, 50), Date().toString(), {
