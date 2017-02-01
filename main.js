@@ -14,6 +14,8 @@ const filterTowers = {
 
 const filterIsNotWall = terrain => terrain.terrain !== "wall";
 
+Memory.invaders = Memory.invaders || 0;
+
 Memory.exits = Memory.exits || {};
 
 Memory.owned = Memory.owned || {};
@@ -28,9 +30,10 @@ Memory.sources = Memory.sources || {};
 
 Memory.danger = Memory.danger || {};
 
-const getClosestSpawn = roomName => Object.keys(Game.spawns).map(key => Game.spawns[key]).sort((a, b) => 
-    Game.map.getRoomLinearDistance(roomName, a.room.name) - Game.map.getRoomLinearDistance(roomName, b.room.name)
-)[0];
+const getClosestSpawn = roomName => Object.keys(Game.spawns).map(key => Game.spawns[key]).sort((a, b) => {
+    const val = Game.map.getRoomLinearDistance(roomName, a.room.name) - Game.map.getRoomLinearDistance(roomName, b.room.name);
+    return val ? val : (a.spawning ? 1 : -1);
+})[0];
 
 module.exports.loop = function () {
     
@@ -272,7 +275,7 @@ module.exports.loop = function () {
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, d);
                                     }
-                                    damaged.splice(0, damaged.length);
+                                    //damaged.splice(0, damaged.length);
                                 } else if(creep.upgradeController(controller) === ERR_NOT_IN_RANGE) {
                                     moveTo(creep, controller);
                                 }
@@ -351,6 +354,37 @@ module.exports.loop = function () {
             }   
         }
     }
+    if(Game.flags.war) {
+        if(typeof (getClosestSpawn(Game.flags.war.pos.roomName).createCreep([
+            ...Array.from({length : 25}).map(_ => MOVE),
+            ...Array.from({length : 25}).map(_ => Memory.invaders % 2 ? HEAL : ATTACK)
+        ], Date().toString(), { //650
+            type : "invader"
+        })) === "string") {
+            Memory.invaders++;
+        }
+    }
+    const invaders = Object.keys(Game.creeps).map(key => Game.creeps[key]).filter(creep => creep.memory.type === "invader");
+    const damaged = invaders.filter(invader => invader.hits < invader.hitsMax);
+    const roomToInvade = Game.rooms[Game.flags.war ? Game.flags.war.pos.roomName : ""];
+    const hostiles = roomToInvade ? [...roomToInvade.find(FIND_HOSTILE_STRUCTURES), ...roomToInvade.find(FIND_HOSTILE_CREEPS)] : [];
+    invaders.forEach(invader => {
+       invader.moveTo(25, 25);
+       if(!goToRoom(invader, Game.flags.war.pos.roomName)) {
+           if(hostiles.length && invader.getActiveBodyparts(ATTACK)) {
+               const target = invader.pos.findClosestByRange(hostiles);
+               if(invader.attack(target) === ERR_NOT_IN_RANGE) {
+                   invader.moveTo(target);
+               }
+           }
+       }
+       if(invader.getActiveBodyparts(HEAL)) {
+           const d = target(invader, damaged);
+           if(invader.rangedHeal(d) + invader.heal(d)) {
+               moveTo(invader, d);
+           }
+       }
+    });
     console.log("---------------");
 };
 
@@ -393,6 +427,8 @@ function addSites(room) {
         addSite(room, STRUCTURE_EXTENSION);
         addSite(room, STRUCTURE_STORAGE);
         addSite(room, STRUCTURE_TERMINAL);
+        addSite(room, STRUCTURE_NUKER);
+        addSite(room, STRUCTURE_OBSERVER);
     }
 }
 
