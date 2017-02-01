@@ -272,6 +272,7 @@ module.exports.loop = function () {
                                     if(creep.repair(d) === ERR_NOT_IN_RANGE) {
                                         moveTo(creep, d);
                                     }
+                                    damaged.splice(0, damaged.length);
                                 } else if(creep.upgradeController(controller) === ERR_NOT_IN_RANGE) {
                                     moveTo(creep, controller);
                                 }
