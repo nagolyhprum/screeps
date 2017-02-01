@@ -126,10 +126,10 @@ module.exports.loop = function () {
         const fighterCount = myRooms.length;
         const fighters = creeps.filter(creep => creep.memory.type == "fighter");
         if(workers.length >= count && fighters.length < fighterCount) {
-            var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
             var body = [TOUGH, TOUGH, MOVE, MOVE, MOVE, ATTACK];
-            var cost = base.reduce((cost, part) => BODYPART_COST[part] + total, 0);
-            var fighterExtCost = base.reduce((cost, part) => BODYPART_COST[part] + total, 0);
+            var base = [MOVE, RANGED_ATTACK, MOVE, HEAL]; //500
+            var cost = body.reduce((cost, part) => BODYPART_COST[part] + cost, 0);
+            var fighterExtCost = base.reduce((cost, part) => BODYPART_COST[part] + cost, 0);
             if((cost += fighterExtCost) <= room.energyCapacityAvailable && fighters.length >= fighterCount / 2) {
                 body = [...body.slice(0, 50), ...base];
             }
