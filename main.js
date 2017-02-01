@@ -100,7 +100,7 @@ module.exports.loop = function () {
         const extCost = BODYPART_COST[WORK] + BODYPART_COST[MOVE] * 2 + BODYPART_COST[CARRY] * 3;
         const workCount = Math.min(9, Math.floor((room.energyCapacityAvailable - BODYPART_COST[WORK] + BODYPART_COST[MOVE] + BODYPART_COST[CARRY]) / extCost) + 1);
         
-        const timetomake = (3 + (workCount - 1) * 6) * 3 / Math.max(spawns.length, 1);
+        const timetomake = (3 + (workCount - 1) * 6) * CREEP_SPAWN_TIME / Math.max(spawns.length, 1);
         
         const count = Math.ceil(750 / timetomake);
         
