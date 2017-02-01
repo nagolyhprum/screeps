@@ -365,23 +365,25 @@ module.exports.loop = function () {
         }
     }
     const invaders = Object.keys(Game.creeps).map(key => Game.creeps[key]).filter(creep => creep.memory.type === "invader");
-    const damaged = invaders.filter(invader => invader.hits < invader.hitsMax);
-    const roomToInvade = Game.rooms[Game.flags.war ? Game.flags.war.pos.roomName : ""];
-    const hostiles = roomToInvade ? [...roomToInvade.find(FIND_HOSTILE_STRUCTURES), ...roomToInvade.find(FIND_HOSTILE_CREEPS)] : [];
     invaders.forEach(invader => {
-       invader.moveTo(25, 25);
        if(!goToRoom(invader, Game.flags.war.pos.roomName)) {
+           const roomToInvade = invader.room;
+           const hostiles = [...roomToInvade.find(FIND_HOSTILE_STRUCTURES), ...roomToInvade.find(FIND_HOSTILE_CREEPS)];
            if(hostiles.length && invader.getActiveBodyparts(ATTACK)) {
+               invader.memory.last = 3;
                const target = invader.pos.findClosestByRange(hostiles);
                if(invader.attack(target) === ERR_NOT_IN_RANGE) {
                    invader.moveTo(target);
                }
+           } else if(!(invader.memory.last = Math.max(invader.memory.last - 1, 0))) {
+               invader.moveTo(25, 25);
            }
        }
        if(invader.getActiveBodyparts(HEAL)) {
-           const d = target(invader, damaged);
-           if(invader.rangedHeal(d) + invader.heal(d)) {
-               moveTo(invader, d);
+           const damaged = invader.room.find(FIND_MY_CREEPS).filter(invader => invader.hits < invader.hitsMax);
+           if(invader.heal(damaged[0])) {
+               invader.rangedHeal(damaged[0]);
+               moveTo(invader, damaged[0]);
            }
        }
     });
