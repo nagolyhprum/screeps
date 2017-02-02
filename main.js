@@ -366,24 +366,26 @@ module.exports.loop = function () {
     }
     const invaders = Object.keys(Game.creeps).map(key => Game.creeps[key]).filter(creep => creep.memory.type === "invader");
     invaders.forEach(invader => {
-       if(!goToRoom(invader, Game.flags.war.pos.roomName)) {
-           const roomToInvade = invader.room;
-           const hostiles = [...roomToInvade.find(FIND_HOSTILE_STRUCTURES), ...roomToInvade.find(FIND_HOSTILE_CREEPS)];
-           if(hostiles.length && invader.getActiveBodyparts(ATTACK)) {
-               invader.memory.last = 3;
-               const target = invader.pos.findClosestByRange(hostiles);
-               if(invader.attack(target) === ERR_NOT_IN_RANGE) {
-                   invader.moveTo(target);
-               }
-           } else if(!(invader.memory.last = Math.max(invader.memory.last - 1, 0))) {
+    
+       const roomToInvade = invader.room;
+       const hostiles = [...roomToInvade.find(FIND_HOSTILE_STRUCTURES), ...roomToInvade.find(FIND_HOSTILE_CREEPS)];
+       if(hostiles.length && invader.getActiveBodyparts(ATTACK)) {
+           invader.memory.last = 3;
+           const target = invader.pos.findClosestByRange(hostiles);
+           if(invader.attack(target) === ERR_NOT_IN_RANGE) {
+               invader.moveTo(target);
+           }
+       } else if(!(invader.memory.last = Math.max(invader.memory.last - 1, 0))) {
+           if(!goToRoom(invader, Game.flags.war.pos.roomName)) {
                invader.moveTo(25, 25);
            }
        }
        if(invader.getActiveBodyparts(HEAL)) {
            const damaged = invader.room.find(FIND_MY_CREEPS).filter(invader => invader.hits < invader.hitsMax);
-           if(invader.heal(damaged[0])) {
-               invader.rangedHeal(damaged[0]);
-               moveTo(invader, damaged[0]);
+           const creep = invader.pos.findClosestByRange(damaged)
+           if(invader.heal(creep) == ERR_NOT_IN_RANGE) {
+               invader.rangedHeal(creep);
+               moveTo(invader, creep);
            }
        }
     });
