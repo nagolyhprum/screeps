@@ -203,13 +203,13 @@ module.exports.loop = function () {
                         
                         const labs = terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
                         
-                        const KH = terminal.pos.findClosestByRange(labs);
-                        labs.splice(labs.indexOf(KH), 1);
-                        const K = terminal.pos.findClosestByRange(labs);
-                        labs.splice(labs.indexOf(K), 1);
-                        const H = terminal.pos.findClosestByRange(labs);
+                        labs.sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50));
                         
-                        KH.runReaction(K, H);
+                        const K = labs.shift();
+                        const H = labs.shift();
+                        const KH = labs.sort((a, b) => a.energy - b.energy);
+                        
+                        KH.forEach(KH => KH.runReaction(K, H));
                         
                         if(creep.carry[RESOURCE_HYDROGEN] && creep.transfer(H, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(H);
@@ -217,8 +217,8 @@ module.exports.loop = function () {
                         if(creep.carry[RESOURCE_KEANIUM] && creep.transfer(K, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(K);
                         }
-                        if(creep.carry[RESOURCE_ENERGY] && creep.transfer(KH, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                            creep.moveTo(KH);
+                        if(creep.carry[RESOURCE_ENERGY] && creep.transfer(KH[0], RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(KH[0]);
                         }
                     } else {
                         if(_.sum(creep.carry) == creep.carryCapacity) {
@@ -264,10 +264,10 @@ module.exports.loop = function () {
                     
                     if(!creep.memory.boosted && creep.room.terminal) {
                         const labs = creep.room.terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
-                        const KH = creep.room.terminal.pos.findClosestByRange(labs);
-                        switch(KH.boostCreep(creep)) {
+                        const KH = labs.sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50)).slice(2).sort((a, b) => b.mineralAmount - a.mineralAmount);
+                        switch(KH[0].boostCreep(creep)) {
                             case ERR_NOT_IN_RANGE : 
-                                creep.moveTo(KH);
+                                creep.moveTo(KH[0]);
                                 break;
                             default:
                                 creep.memory.boosted = true;
