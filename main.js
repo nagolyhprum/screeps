@@ -142,7 +142,7 @@ module.exports.loop = function () {
             });
         }
         const scientists = creeps.filter(creep => creep.memory.type === "scientist");
-        if(scientists.length < 5) {
+        if(!scientists.length) {
             spawn.createCreep([MOVE, CARRY], (new Date()).toString(), {
                 type : "scientist",
                 home : controller.id
@@ -194,10 +194,10 @@ module.exports.loop = function () {
             switch(creep.memory.type) {
                 case "scientist" :
                     if(false) { //IF CLEAR LABS
-                        if(_.sum(creep.carry) < creep.carryCapacity) {
-                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.energy})[0];
+                        if(_.sum(creep.carry) < creep.carryCapacity && false) {
+                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount})[0];
                             if(lab) {
-                                if(creep.withdraw(lab, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                                if(creep.withdraw(lab, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
                                     creep.moveTo(lab);
                                 }
                             }
@@ -208,10 +208,11 @@ module.exports.loop = function () {
                                 creep.moveTo(storage);
                             }
                         }   
-                    } else {
+                    } else if(creep.room.name !== "W7N7") {
                         //MOVE TO TERMINAL
                         if(_.sum(creep.carry) < creep.carryCapacity) {
                             const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
+                            if(!storage) break;
                             const resource = Object.keys(storage.store).find(resource => storage.store[resource]);
                             if(creep.withdraw(storage, resource) === ERR_NOT_IN_RANGE) {
                                 creep.moveTo(storage);
@@ -225,7 +226,44 @@ module.exports.loop = function () {
                                 }
                             }
                         }   
-                        
+                    } else {
+                        if(!creep.memory.gathering) {
+                            if(!_.sum(creep.carry)) {
+                                creep.memory.gathering = true;
+                            }
+                            
+                            const H = Game.getObjectById("1a88a7f87ccf47b");
+                            const K = Game.getObjectById("8bd6b36349f5222");
+                            const KH = Game.getObjectById("54ada4b67775f6e");
+                            
+                            KH.runReaction(K, H);
+                            
+                            if(creep.carry[RESOURCE_HYDROGEN] && creep.transfer(H, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(H);
+                            }
+                            if(creep.carry[RESOURCE_KEANIUM] && creep.transfer(K, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(K);
+                            }
+                            if(creep.carry[RESOURCE_ENERGY] && creep.transfer(KH, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(KH);
+                            }
+                        } else {
+                            if(_.sum(creep.carry) == creep.carryCapacity) {
+                                creep.memory.gathering = false;
+                            }
+                            const one_fifth = creep.carryCapacity / 5;
+                            const two_fifths = 2 * one_fifth;
+                            const terminal = creep.room.terminal;
+                            if(!creep.carry[RESOURCE_HYDROGEN] && creep.withdraw(terminal, RESOURCE_HYDROGEN, two_fifths) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(terminal);
+                            }
+                            if(!creep.carry[RESOURCE_KEANIUM] && creep.withdraw(terminal, RESOURCE_KEANIUM, two_fifths) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(terminal);
+                            }
+                            if(!creep.carry[RESOURCE_ENERGY] && creep.withdraw(terminal, RESOURCE_ENERGY, one_fifth) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(terminal);
+                            }
+                        }
                     }
                     break;
                 case "reserver" :
@@ -249,6 +287,18 @@ module.exports.loop = function () {
                     goToRoom(creep, creep.memory.goal);
                     break;
                 case "worker" :
+                    
+                    if(creep.room.name === "W7N7" && !creep.memory.boosted) {
+                        const KH = Game.getObjectById("54ada4b67775f6e");
+                        switch(KH.boostCreep(creep)) {
+                            case ERR_NOT_IN_RANGE : 
+                                creep.moveTo(KH);
+                            default:
+                                creep.memory.boosted = true;
+                        }
+                        break;
+                    }
+                    
                     if(_.sum(creep.carry) === creep.carryCapacity && creep.memory.isWorking) { 
                         creep.memory.isWorking = false;
                         var source = mySources.find(source => source.id === creep.memory.source);
@@ -306,7 +356,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(creep.memory.id % 2) {
+                        switch(storage.length || !creep.room.terminal || _.sum(creep.room.terminal.store < 250000) ? creep.memory.id % 4 : 0) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 1000) {
                                     var c = target(creep, cs.slice(0));
