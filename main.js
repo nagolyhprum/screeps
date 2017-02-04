@@ -141,6 +141,13 @@ module.exports.loop = function () {
                 home : controller.id
             });
         }
+        const scientists = creeps.filter(creep => creep.memory.type === "scientist");
+        if(!scientists.length) {
+            spawn.createCreep([MOVE, CARRY], (new Date()).toString(), {
+                type : "scientist",
+                home : controller.id
+            });
+        }
         const hasExpander = !!creeps.find(creep => creep.memory.type === "expander");
         const unknown = myRooms.find(room => !Memory.sources[room]);
         if(!hasExpander && unknown) {
@@ -185,6 +192,42 @@ module.exports.loop = function () {
         
         creeps.forEach(creep => {
             switch(creep.memory.type) {
+                case "scientist" :
+                    if(false) { //IF CLEAR LABS
+                        if(_.sum(creep.carry) < creep.carryCapacity) {
+                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount})[0];
+                            if(lab) {
+                                if(creep.withdraw(lab, lab.mineralType) === ERR_NOT_IN_RANGE) {
+                                    creep.moveTo(lab);
+                                }
+                            }
+                        } else {
+                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
+                            const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
+                            if(creep.transfer(storage, resource) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(storage);
+                            }
+                        }   
+                    } else {
+                        //MOVE TO TERMINAL
+                        if(_.sum(creep.carry) < creep.carryCapacity) {
+                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
+                            const resource = Object.keys(storage.store).find(resource => storage.store[resource]);
+                            if(creep.withdraw(storage, resource) === ERR_NOT_IN_RANGE) {
+                                creep.moveTo(storage);
+                            }
+                        } else {
+                            const terminal = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL})[0];
+                            const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
+                            if(terminal) {
+                                if(creep.transfer(terminal, resource) === ERR_NOT_IN_RANGE) {
+                                    creep.moveTo(terminal);
+                                }
+                            }
+                        }   
+                        
+                    }
+                    break;
                 case "reserver" :
                     if(!goToRoom(creep, creep.memory.target)) {
                         const controller = creep.room.controller;
@@ -255,7 +298,7 @@ module.exports.loop = function () {
                     } else {
                         
                         if(!creep.carry[RESOURCE_ENERGY]) {
-                            const container = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
+                            const container = room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL})[0];
                             const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
                             if(container && creep.transfer(container, resource) === ERR_NOT_IN_RANGE) {
                                 moveTo(creep, container);
@@ -263,7 +306,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length ? creep.memory.id % 2 : 0) {
+                        switch(creep.memory.id % 2) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 1000) {
                                     var c = target(creep, cs.slice(0));
@@ -282,7 +325,7 @@ module.exports.loop = function () {
                                 break;
                             default :
                                 if(!goToRoom(creep, room)) {
-                                    var store = creep.pos.findClosestByPath(storage);
+                                    var store = creep.pos.findClosestByPath(storage) || creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE })[0];
                                     var io = storage.indexOf(store);
                                     if(io => 0) {
                                         storage.splice(io, 1);
@@ -324,6 +367,17 @@ module.exports.loop = function () {
                 tower.heal(hurt[0]);
             }
         });
+        
+        const terminals = controllers.reduce((terminals, controller) => controller.room.terminal ? [...terminals, controller.room.terminal] : terminals, []);
+        terminals.forEach(terminal => {
+            if(terminal.room.name !== "W7N7") {
+                const resource = Object.keys(terminal.store).find(resource => terminal.store[resource] && resource !== RESOURCE_ENERGY);
+                if(resource) {
+                    terminal.send(resource, 100, "W7N7");
+                }
+            }
+        });
+        
         addSites(room);
     });
     
@@ -429,7 +483,6 @@ function addSites(room) {
         addSite(room, STRUCTURE_SPAWN);
         addSite(room, STRUCTURE_TOWER);
         addSite(room, STRUCTURE_EXTENSION);
-        addSite(room, STRUCTURE_STORAGE);
         addSite(room, STRUCTURE_TERMINAL);
         addSite(room, STRUCTURE_NUKER);
         addSite(room, STRUCTURE_OBSERVER);
