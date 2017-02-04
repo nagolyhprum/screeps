@@ -63,6 +63,8 @@ module.exports.loop = function () {
         });
     });
     
+    const terminals = controllers.reduce((terminals, controller) => controller.room.terminal ? [...terminals, controller.room.terminal] : terminals, []);
+    
     controllers.forEach(controller => {
         const { room } = controller;
         
@@ -193,77 +195,49 @@ module.exports.loop = function () {
         creeps.forEach(creep => {
             switch(creep.memory.type) {
                 case "scientist" :
-                    if(false) { //IF CLEAR LABS
-                        if(_.sum(creep.carry) < creep.carryCapacity && false) {
-                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount})[0];
-                            if(lab) {
-                                if(creep.withdraw(lab, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(lab);
-                                }
-                            }
-                        } else {
-                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL})[0];
-                            const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
-                            if(creep.transfer(storage, resource) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(storage);
-                            }
-                        }   
-                    } else if(creep.room.name !== "W7N7") {
-                        //MOVE TO TERMINAL
-                        if(_.sum(creep.carry) < creep.carryCapacity) {
-                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
-                            if(!storage) break;
-                            const resource = Object.keys(storage.store).find(resource => storage.store[resource]);
-                            if(creep.withdraw(storage, resource) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(storage);
-                            }
-                        } else {
-                            const terminal = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL})[0];
-                            const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
-                            if(terminal) {
-                                if(creep.transfer(terminal, resource) === ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(terminal);
-                                }
-                            }
-                        }   
-                    } else {
-                        if(!creep.memory.gathering) {
-                            if(!_.sum(creep.carry)) {
-                                creep.memory.gathering = true;
-                            }
-                            
-                            const H = Game.getObjectById("1a88a7f87ccf47b");
-                            const K = Game.getObjectById("8bd6b36349f5222");
-                            const KH = Game.getObjectById("54ada4b67775f6e");
-                            
-                            KH.runReaction(K, H);
-                            
-                            if(creep.carry[RESOURCE_HYDROGEN] && creep.transfer(H, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(H);
-                            }
-                            if(creep.carry[RESOURCE_KEANIUM] && creep.transfer(K, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(K);
-                            }
-                            if(creep.carry[RESOURCE_ENERGY] && creep.transfer(KH, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(KH);
-                            }
-                        } else {
-                            if(_.sum(creep.carry) == creep.carryCapacity) {
-                                creep.memory.gathering = false;
-                            }
-                            const one_fifth = creep.carryCapacity / 5;
-                            const two_fifths = 2 * one_fifth;
-                            const terminal = creep.room.terminal;
-                            if(!creep.carry[RESOURCE_HYDROGEN] && creep.withdraw(terminal, RESOURCE_HYDROGEN, two_fifths) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(terminal);
-                            }
-                            if(!creep.carry[RESOURCE_KEANIUM] && creep.withdraw(terminal, RESOURCE_KEANIUM, two_fifths) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(terminal);
-                            }
-                            if(!creep.carry[RESOURCE_ENERGY] && creep.withdraw(terminal, RESOURCE_ENERGY, one_fifth) === ERR_NOT_IN_RANGE) {
-                                creep.moveTo(terminal);
-                            }
+                    const terminal = creep.room.terminal;
+                    if(!creep.memory.gathering) {
+                        if(!_.sum(creep.carry)) {
+                            creep.memory.gathering = true;
                         }
+                        
+                        const labs = terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
+                        
+                        const KH = terminal.pos.findClosestByRange(labs);
+                        labs.splice(labs.indexOf(KH), 1);
+                        const K = terminal.pos.findClosestByRange(labs);
+                        labs.splice(labs.indexOf(K), 1);
+                        const H = terminal.pos.findClosestByRange(labs);
+                        
+                        KH.runReaction(K, H);
+                        
+                        if(creep.carry[RESOURCE_HYDROGEN] && creep.transfer(H, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(H);
+                        }
+                        if(creep.carry[RESOURCE_KEANIUM] && creep.transfer(K, RESOURCE_KEANIUM) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(K);
+                        }
+                        if(creep.carry[RESOURCE_ENERGY] && creep.transfer(KH, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(KH);
+                        }
+                    } else {
+                        if(_.sum(creep.carry) == creep.carryCapacity) {
+                            creep.memory.gathering = false;
+                        }
+                        const one_fifth = creep.carryCapacity / 5;
+                        const two_fifths = 2 * one_fifth;
+                        if(!creep.carry[RESOURCE_HYDROGEN] && creep.withdraw(terminal, RESOURCE_HYDROGEN, two_fifths) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(terminal);
+                        }
+                        if(!creep.carry[RESOURCE_KEANIUM] && creep.withdraw(terminal, RESOURCE_KEANIUM, two_fifths) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(terminal);
+                        }
+                        if(!creep.carry[RESOURCE_ENERGY] && creep.withdraw(terminal, RESOURCE_ENERGY, one_fifth) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(terminal);
+                        }
+                        getResource(terminals, terminal, RESOURCE_HYDROGEN);
+                        getResource(terminals, terminal, RESOURCE_KEANIUM);
+                        getResource(terminals, terminal, RESOURCE_ENERGY);
                     }
                     break;
                 case "reserver" :
@@ -288,11 +262,13 @@ module.exports.loop = function () {
                     break;
                 case "worker" :
                     
-                    if(creep.room.name === "W7N7" && !creep.memory.boosted) {
-                        const KH = Game.getObjectById("54ada4b67775f6e");
+                    if(!creep.memory.boosted && creep.room.terminal) {
+                        const labs = creep.room.terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
+                        const KH = creep.room.terminal.pos.findClosestByRange(labs);
                         switch(KH.boostCreep(creep)) {
                             case ERR_NOT_IN_RANGE : 
                                 creep.moveTo(KH);
+                                break;
                             default:
                                 creep.memory.boosted = true;
                         }
@@ -417,17 +393,7 @@ module.exports.loop = function () {
                 tower.heal(hurt[0]);
             }
         });
-        
-        const terminals = controllers.reduce((terminals, controller) => controller.room.terminal ? [...terminals, controller.room.terminal] : terminals, []);
-        const term = Game.rooms.W7N7.terminal;
-        if(_.sum(term.store) < term.storeCapacity * 5 / 6) {
-            terminals.forEach(terminal => {
-                if(terminal.room.name !== "W7N7") {
-                    terminal.send("H", 100, "W7N7");
-                }
-            });
-        }
-        
+
         addSites(room);
     });
     
@@ -587,4 +553,11 @@ function initSources(rooms) {
             room[source.id] = { count, list : [], room : source.room.name, id : source.id };
         }
     });
+}
+
+function getResource(terminals, terminal, resource) {
+    if(!terminal.store[resource] || terminal.store[resource] < 100) {
+        const t = terminals.find(t => t.store[resource] >= 100);
+        t.send(resource, 100, terminal.room.name);
+    }
 }
