@@ -332,7 +332,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length || !creep.room.terminal || _.sum(creep.room.terminal.store < 250000) ? creep.memory.id % 4 : 0) {
+                        switch(storage.length || !creep.room.terminal || _.sum(creep.room.terminal.store) < 250000 ? creep.memory.id % 4 : 0) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 1000) {
                                     var c = target(creep, cs.slice(0));
