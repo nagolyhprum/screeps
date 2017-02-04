@@ -224,15 +224,15 @@ module.exports.loop = function () {
                         if(_.sum(creep.carry) == creep.carryCapacity) {
                             creep.memory.gathering = false;
                         }
-                        const one_fifth = creep.carryCapacity / 5;
-                        const two_fifths = 2 * one_fifth;
+                        const one_fifth = 10;
+                        const two_fifths = 20;
+                        if(!creep.carry[RESOURCE_ENERGY] && creep.withdraw(terminal, RESOURCE_ENERGY, one_fifth) === ERR_NOT_IN_RANGE) {
+                            creep.moveTo(terminal);
+                        }
                         if(!creep.carry[RESOURCE_HYDROGEN] && creep.withdraw(terminal, RESOURCE_HYDROGEN, two_fifths) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(terminal);
                         }
                         if(!creep.carry[RESOURCE_KEANIUM] && creep.withdraw(terminal, RESOURCE_KEANIUM, two_fifths) === ERR_NOT_IN_RANGE) {
-                            creep.moveTo(terminal);
-                        }
-                        if(!creep.carry[RESOURCE_ENERGY] && creep.withdraw(terminal, RESOURCE_ENERGY, one_fifth) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(terminal);
                         }
                         getResource(terminals, terminal, RESOURCE_HYDROGEN);
