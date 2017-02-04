@@ -142,7 +142,7 @@ module.exports.loop = function () {
             });
         }
         const scientists = creeps.filter(creep => creep.memory.type === "scientist");
-        if(!scientists.length) {
+        if(scientists.length < 5) {
             spawn.createCreep([MOVE, CARRY], (new Date()).toString(), {
                 type : "scientist",
                 home : controller.id
@@ -325,7 +325,7 @@ module.exports.loop = function () {
                                 break;
                             default :
                                 if(!goToRoom(creep, room)) {
-                                    var store = creep.pos.findClosestByPath(storage) || creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE })[0];
+                                    var store = creep.pos.findClosestByPath(storage) || creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL })[0];
                                     var io = storage.indexOf(store);
                                     if(io => 0) {
                                         storage.splice(io, 1);
@@ -369,11 +369,11 @@ module.exports.loop = function () {
         });
         
         const terminals = controllers.reduce((terminals, controller) => controller.room.terminal ? [...terminals, controller.room.terminal] : terminals, []);
+        const term = Game.rooms.W7N7.terminal;
         terminals.forEach(terminal => {
             if(terminal.room.name !== "W7N7") {
-                const resource = Object.keys(terminal.store).find(resource => terminal.store[resource] && resource !== RESOURCE_ENERGY);
-                if(resource) {
-                    terminal.send(resource, 100, "W7N7");
+                if(_.sum(term.store) < term.storeCapacity / 2) {
+                    terminal.send("H", 100, "W7N7");
                 }
             }
         });
