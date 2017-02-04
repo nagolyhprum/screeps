@@ -5,7 +5,7 @@ const filterIsWorker = creep => creep.memory.type === "worker";
 const sortCS = (a, b) => (b.progress + b.progressTotal) - (a.progress + a.progressTotal)
 
 const filterStorage = {
-    filter : structure => [STRUCTURE_LAB, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(structure.structureType) && structure.energy < structure.energyCapacity
+    filter : structure => [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER].includes(structure.structureType) && structure.energy < structure.energyCapacity
 };
 
 const filterTowers = {
@@ -195,14 +195,14 @@ module.exports.loop = function () {
                 case "scientist" :
                     if(false) { //IF CLEAR LABS
                         if(_.sum(creep.carry) < creep.carryCapacity) {
-                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.mineralAmount})[0];
+                            const lab = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB && s.energy})[0];
                             if(lab) {
-                                if(creep.withdraw(lab, lab.mineralType) === ERR_NOT_IN_RANGE) {
+                                if(creep.withdraw(lab, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
                                     creep.moveTo(lab);
                                 }
                             }
                         } else {
-                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_STORAGE})[0];
+                            const storage = creep.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_TERMINAL})[0];
                             const resource = Object.keys(creep.carry).find(resource => creep.carry[resource]);
                             if(creep.transfer(storage, resource) === ERR_NOT_IN_RANGE) {
                                 creep.moveTo(storage);
@@ -370,13 +370,13 @@ module.exports.loop = function () {
         
         const terminals = controllers.reduce((terminals, controller) => controller.room.terminal ? [...terminals, controller.room.terminal] : terminals, []);
         const term = Game.rooms.W7N7.terminal;
-        terminals.forEach(terminal => {
-            if(terminal.room.name !== "W7N7") {
-                if(_.sum(term.store) < term.storeCapacity / 2) {
+        if(_.sum(term.store) < term.storeCapacity * 5 / 6) {
+            terminals.forEach(terminal => {
+                if(terminal.room.name !== "W7N7") {
                     terminal.send("H", 100, "W7N7");
                 }
-            }
-        });
+            });
+        }
         
         addSites(room);
     });
