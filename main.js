@@ -68,6 +68,19 @@ module.exports.loop = function () {
     controllers.forEach(controller => {
         const { room } = controller;
         
+        
+        const terminal = room.terminal;
+        
+        const labs = terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
+        
+        labs.sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50));
+        
+        const K = labs.shift();
+        const H = labs.shift();
+        const KH = labs.sort((a, b) => a.energy - b.energy);
+        
+        KH.forEach(KH => KH.runReaction(K, H));
+        
         const flags = room.find(FIND_FLAGS);
         
         const spawns = room.find(FIND_STRUCTURES, {
@@ -144,7 +157,7 @@ module.exports.loop = function () {
             });
         }
         const scientists = creeps.filter(creep => creep.memory.type === "scientist");
-        if(!scientists.length) {
+        if(!scientists.length && false) {
             spawn.createCreep([MOVE, CARRY], (new Date()).toString(), {
                 type : "scientist",
                 home : controller.id
@@ -195,21 +208,10 @@ module.exports.loop = function () {
         creeps.forEach(creep => {
             switch(creep.memory.type) {
                 case "scientist" :
-                    const terminal = creep.room.terminal;
                     if(!creep.memory.gathering) {
                         if(!_.sum(creep.carry)) {
                             creep.memory.gathering = true;
                         }
-                        
-                        const labs = terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
-                        
-                        labs.sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50));
-                        
-                        const K = labs.shift();
-                        const H = labs.shift();
-                        const KH = labs.sort((a, b) => a.energy - b.energy);
-                        
-                        KH.forEach(KH => KH.runReaction(K, H));
                         
                         if(creep.carry[RESOURCE_HYDROGEN] && creep.transfer(H, RESOURCE_HYDROGEN) === ERR_NOT_IN_RANGE) {
                             creep.moveTo(H);
@@ -262,9 +264,7 @@ module.exports.loop = function () {
                     break;
                 case "worker" :
                     
-                    if(!creep.memory.boosted && creep.room.terminal) {
-                        const labs = creep.room.terminal.room.find(FIND_STRUCTURES, { filter : s => s.structureType === STRUCTURE_LAB });
-                        const KH = labs.sort((a, b) => (a.pos.x + a.pos.y * 50) - (b.pos.x + b.pos.y * 50)).slice(2).sort((a, b) => b.mineralAmount - a.mineralAmount);
+                    if(!creep.memory.boosted && creep.room.terminal && false) {
                         switch(KH[0].boostCreep(creep)) {
                             case ERR_NOT_IN_RANGE : 
                                 creep.moveTo(KH[0]);
@@ -299,7 +299,10 @@ module.exports.loop = function () {
                         
                         var source;
                         if(!creep.memory.source) {
-                            source = mySources.sort((a, b) => a.list.length - b.list.length).find(source => source.list.length < source.count);
+                            if(workers.length == count) {
+                                source = mySources.sort((a, b) => a.list.length - b.list.length);
+                            }
+                            source = mySources.find(source => source.list.length < source.count);
                             if(!source) {
                                 break;
                             }
@@ -558,6 +561,8 @@ function initSources(rooms) {
 function getResource(terminals, terminal, resource) {
     if(!terminal.store[resource] || terminal.store[resource] < 100) {
         const t = terminals.find(t => t.store[resource] >= 100);
-        t.send(resource, 100, terminal.room.name);
+        if(t) {
+            t.send(resource, 100, terminal.room.name);
+        }
     }
 }
