@@ -157,7 +157,7 @@ module.exports.loop = function () {
             });
         }
         const scientists = creeps.filter(creep => creep.memory.type === "scientist");
-        if(!scientists.length && false) {
+        if(!scientists.length) {
             spawn.createCreep([MOVE, CARRY], (new Date()).toString(), {
                 type : "scientist",
                 home : controller.id
@@ -264,10 +264,10 @@ module.exports.loop = function () {
                     break;
                 case "worker" :
                     
-                    if(!creep.memory.boosted && creep.room.terminal && false) {
-                        switch(KH[0].boostCreep(creep)) {
+                    if(!creep.memory.boosted && creep.room.terminal) {
+                        switch(KH[KH.length - 1].boostCreep(creep)) {
                             case ERR_NOT_IN_RANGE : 
-                                creep.moveTo(KH[0]);
+                                creep.moveTo(KH[KH.length - 1]);
                                 break;
                             default:
                                 creep.memory.boosted = true;
@@ -335,7 +335,7 @@ module.exports.loop = function () {
                             break;
                         }
                         
-                        switch(storage.length || !creep.room.terminal || _.sum(creep.room.terminal.store) < 250000 ? creep.memory.id % 4 : 0) {
+                        switch(storage.length || (creep.room.terminal && _.sum(creep.room.terminal.store) < 250000) ? creep.memory.id % 4 : 0) {
                             case 0 :
                                  if(cs.length && controller.ticksToDowngrade >= 1000) {
                                     var c = target(creep, cs.slice(0));
